@@ -3,7 +3,6 @@ package functionalsql;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -90,6 +89,11 @@ public class FunctionalSQLCompiler {
 
 	private String originalStatement;
 	private int popCounter = 0;
+
+	/** When compiling fs fragments, we dont want to lose the statement.
+	 * See compileFSFragment().
+	 */
+	private boolean dontPopStatements=false;
 
 	private FunctionalSQLCompiler compiler;
 
@@ -190,6 +194,14 @@ public class FunctionalSQLCompiler {
 		}
 
 		return s.sql;
+	}
+
+
+	protected void compileFSFragment(String fragment) throws Exception {
+		FunctionalSQLCompiler customCompiler = new FunctionalSQLCompiler();
+		customCompiler.dontPopStatements = true;
+		customCompiler.parse(fragment);
+		compiler.getTopStatement().filterClauses.addAll(customCompiler.getTopStatement().filterClauses);
 	}
 
 	private boolean isNull(String s) {
@@ -952,7 +964,9 @@ public class FunctionalSQLCompiler {
 
 			/* Remove statement from the stack.
 			*/
-			statements.remove(this);
+			if(!dontPopStatements) {
+				statements.remove(this);
+			}
 		}
 
 		private String compileSQL() throws Exception {
