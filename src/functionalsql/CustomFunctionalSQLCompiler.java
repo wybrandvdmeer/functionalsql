@@ -15,12 +15,12 @@ public class CustomFunctionalSQLCompiler extends FunctionalSQLCompiler {
     /**
      * Example of a custom function.
      * Function works on tables which contains a field called id.
-     * It adds a filter to an expression similar to table.id = 12.
+     * It adds a filter to an expression similar to table.id = <value>.
      *
      * Syntax:
      *
-     * id(10)
-     * id(table, 10)
+     * id(value)
+     * id(table, value)
      */
     protected class Id extends Function {
 
