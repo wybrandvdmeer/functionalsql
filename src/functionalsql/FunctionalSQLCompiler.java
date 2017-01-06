@@ -951,9 +951,7 @@ public class FunctionalSQLCompiler {
 
 			/* Remove statement from the stack.
 			*/
-			if(!dontPopStatements) {
-				statements.remove(this);
-			}
+			statements.remove(this);
 		}
 
 		private String compileSQL() throws Exception {
