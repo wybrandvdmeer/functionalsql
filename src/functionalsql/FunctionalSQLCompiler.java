@@ -90,11 +90,6 @@ public class FunctionalSQLCompiler {
 	private String originalStatement;
 	private int popCounter = 0;
 
-	/** When compiling fs fragments, we dont want to lose the statement.
-	 * See compileFSFragment().
-	 */
-	private boolean dontPopStatements=false;
-
 	private FunctionalSQLCompiler compiler;
 
 	/**
@@ -194,14 +189,6 @@ public class FunctionalSQLCompiler {
 		}
 
 		return s.sql;
-	}
-
-
-	protected void compileFSFragment(String fragment) throws Exception {
-		FunctionalSQLCompiler customCompiler = new FunctionalSQLCompiler();
-		customCompiler.dontPopStatements = true;
-		customCompiler.parse(fragment);
-		compiler.getTopStatement().filterClauses.addAll(customCompiler.getTopStatement().filterClauses);
 	}
 
 	private boolean isNull(String s) {

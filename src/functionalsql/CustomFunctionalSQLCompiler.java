@@ -1,5 +1,8 @@
 package functionalsql;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CustomFunctionalSQLCompiler extends FunctionalSQLCompiler {
 
     /** Error. */
@@ -42,11 +45,19 @@ public class CustomFunctionalSQLCompiler extends FunctionalSQLCompiler {
                 syntaxError(ERR_ARGUMENT_SHOULD_BE_NUMMERICAL, value2 == null ? value1 : value2);
             }
 
-            if(value2 == null) {
-                compileFSFragment(String.format("filter(id,%s)", value1));
-            } else {
-                compileFSFragment(String.format("filter(%s.id,%s)", value1, value2));
+            if(value2 != null) {
+                if(!isTable(value1)) {
+                    syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, value1);
+                }
+
+                value1 = getAlias(value1);
             }
+
+            String column = value2 != null ? (value1 + ".id") : "id";
+            List<String> values = new ArrayList<>();
+            values.add(value2 != null ? value2 : value1);
+
+            filter(column, values);
         }
     }
 }
