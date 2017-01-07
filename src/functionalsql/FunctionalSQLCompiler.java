@@ -913,8 +913,8 @@ public class FunctionalSQLCompiler {
 						if (instance instanceof Statement) {
 							String nestedQuery = ((Statement) instance).sql;
 
-							if(((Statement)instance).isFullSelect()) {
-								fromClauses.addAll(((Statement) instance).fromClauses);
+							if(isFullSelect()) {
+                                copyStatement(((Statement)instance));
 							} else {
 								fromClauses.add(String.format("(%s) %s", nestedQuery, getAlias(nestedQuery)));
 							}
@@ -1023,9 +1023,20 @@ public class FunctionalSQLCompiler {
 			return sql;
 		}
 
-		public boolean isFullSelect() {
-			return joinClauses.size() == 0;
+		private boolean isFullSelect() {
+			return joinClauses.size() == 0 && filterClauses.size() == 0;
 		}
+
+		private void copyStatement(Statement statement) {
+		    this.clauses[0] = statement.clauses[0];
+            this.clauses[1] = statement.clauses[1];
+            this.clauses[2] = statement.clauses[2];
+
+            this.aliases.putAll(statement.aliases);
+            this.fromClauses.addAll(statement.fromClauses);
+            this.joinClauses.addAll(statement.joinClauses);
+            this.filterClauses.addAll(statement.filterClauses);
+        }
 	}
 
 	/*
