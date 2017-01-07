@@ -9,13 +9,16 @@ The FS compiler takes this information into account when creating the sql.
 
 Is is also possible to extend the compiler and create a custom compiler with specific commands designed for a specific database.
 
-Some examples:
+Some examples (Functional SQL -> SQL):
 
-Functional SQL -> SQL
 a -> SELECT * FROM a
+
 (a) -> SELECT * FROM a
+
 a join( b, veld1, veld2) -> SELECT * FROM a t0, b t1 WHERE t0.veld1 = t1.veld2
+
 a join( b ) sum(1, a.veld1, b.veld2) -> SELECT t0.veld1, t1.veld2 FROM a t0, b t1 WHERE a.id = b.id GROUP BY a.veld1, b.veld2
+
 a join( (b join(c)), id, id ) -> SELECT * FROM a t0, (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id) t1 WHERE t0.id = t1.id
 
 
