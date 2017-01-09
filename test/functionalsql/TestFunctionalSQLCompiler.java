@@ -13,6 +13,30 @@ public class TestFunctionalSQLCompiler {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
+    public void testQuotedTableNameJoin() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage("Wrong format table or column name: 'b'.");
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a join('b')");
+    }
+
+    @Test
+    public void testQuotedTableNameNewTable() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage("Wrong format table or column name: 'a'.");
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a join(newtable('a'))");
+    }
+
+    @Test
+    public void testQuotedTableNamePrint() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage("Wrong format table or column name: 'b'.");
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a print('b')");
+    }
+
+    @Test
     public void testMissingEndQuote() throws Exception {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(FunctionalSQLCompiler.ERR_MISSING_END_QUOTE);

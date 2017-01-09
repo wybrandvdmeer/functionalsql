@@ -1,18 +1,16 @@
 package functionalsql;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 /**
  * Functional sql compiler.
  */
 public class FunctionalSQLCompiler {
+
+	public static final String ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME = "Wrong format table or column name: %s.";
 
 	public static final String ERR_VALUE_SHOULD_BE_QUOTED = "Value (%s) should be quoted.";
 
@@ -34,7 +32,7 @@ public class FunctionalSQLCompiler {
 
 	public static final String ERR_EXP_OPENING_BRACKET = "Expected opening bracket.";
 
-	public static final String ERR_EXP_COMMA = "Expected ','.";
+	public static final String ERR_EXP_COMMA = "Expected ',' instead of (%s).";
 
 	public static final String ERR_MISSING_END_QUOTE = "Missing end quote.";
 
@@ -71,6 +69,7 @@ public class FunctionalSQLCompiler {
 	private int popCounter = 0;
 
 	private FunctionalSQLCompiler compiler;
+	private final Pattern tableOrColumnNameMatcher=Pattern.compile("[a-zA-Z0-9_]*");
 
 	/**
 	 * Constructor.
@@ -354,7 +353,7 @@ public class FunctionalSQLCompiler {
 		assert (values != null && values.size() > 0);
 
 		for(String value : values) {
-			if(!isNummerical(value) && !isQuoted(value)) {
+			if(!isNummeric(value) && !isQuoted(value)) {
 				syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
 			}
 		}
@@ -696,7 +695,7 @@ public class FunctionalSQLCompiler {
 	 * @throws Exception Thrown in case of an error.
 	 */
 	protected void like(String column, String value) throws Exception {
-		if(!isNummerical(value) && !isQuoted(value)) {
+		if(!isNummeric(value) && !isQuoted(value)) {
 			syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
 		}
 
@@ -719,7 +718,7 @@ public class FunctionalSQLCompiler {
 			syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, tableAndColumn[0]);
 		}
 
-		if (!isNummerical(reference)) {
+		if (!isNummeric(reference)) {
 			syntaxError(ERR_TABLE_REFERENCE_SHOULD_BE_NUMMERICAL, reference);
 		}
 
@@ -793,21 +792,34 @@ public class FunctionalSQLCompiler {
 	}
 
 	/** Column can be noted as table.column or just a column. In the first case function translates it into alias.column
+	 * When value is a nummerical (for instance in function sum(1)), then argument is left untouched.
 	*/
-	private String resolveColumn(String s) throws Exception {
-		String[] tableAndColumn = splitTableColumn(s);
+	private String resolveColumn(String value) throws Exception {
+		String[] tableAndColumn = splitTableColumn(value);
 
-		/* If table turns out to be a nummerical, then compiler assumes that argument is a nummerical with a decimal point.
-		*/
-		if (isNummerical(tableAndColumn[0])) {
-			return s;
+		if (isNummeric(tableAndColumn[0])) {
+			return value;
+		}
+
+		for(String s : tableAndColumn) {
+			checkIfArgIsAlphaNummer(s);
 		}
 
 		if (tableAndColumn.length == 1) {
-			return s;
+			return value;
 		}
 
 		return getAlias(tableAndColumn[0]) + "." + tableAndColumn[1];
+	}
+
+	private void checkIfArgIsAlphaNummer(String s) throws Exception {
+		if(s != null && !isTableOrColumnName(s)) {
+			syntaxError(ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME, s);
+		}
+	}
+
+	protected boolean isTableOrColumnName(String value) {
+		return tableOrColumnNameMatcher.matcher(value).matches();
 	}
 
 	/**
@@ -815,7 +827,7 @@ public class FunctionalSQLCompiler {
 	 * @param s The string.
 	 * @return True is string is nummerical. Otherwise false.
 	 */
-	protected boolean isNummerical(String s) {
+	protected boolean isNummeric(String s) {
 		for (int idx = 0; idx < s.getBytes().length; idx++) {
 			int c = s.getBytes()[idx];
 
@@ -1291,6 +1303,10 @@ public class FunctionalSQLCompiler {
 	private class NewTable extends Function {
 		private String alias = null;
 
+		public NewTable() {
+			this.argumentsTakesTableOrColumn(1);
+		}
+
 		/* FETCH THE TABLE NAME.
 		*/
 		protected void processor1(String s) throws Exception {
@@ -1420,6 +1436,7 @@ public class FunctionalSQLCompiler {
 
 				joinTable = "(" + statement.sql + ")";
 			} else {
+				checkIfArgIsAlphaNummer(s);
 				joinTable = s;
 			}
 
@@ -1450,6 +1467,8 @@ public class FunctionalSQLCompiler {
 				return;
 			}
 
+			checkIfArgIsAlphaNummer(s);
+
 			joinFieldDriveTable = s;
 
 			nextStep();
@@ -1471,6 +1490,7 @@ public class FunctionalSQLCompiler {
 				return;
 			}
 
+			checkIfArgIsAlphaNummer(s);
 			joinFieldJoinTable = s;
 
 			nextStep();
@@ -1494,8 +1514,6 @@ public class FunctionalSQLCompiler {
 		}
 
 		public void post() throws Exception {
-			/* Expand the where clause.
-			*/
 			join(driveTable, aliasDriveTable, joinFieldDriveTable, joinTable, aliasJoinTable, joinFieldJoinTable);
 		}
 	}
@@ -1594,12 +1612,12 @@ public class FunctionalSQLCompiler {
 		protected List<String> values = new ArrayList<String>();
 		protected String table = null, column = null, value = null;
 
-		private int status = 1;
+		private Integer step = 1;
 		protected boolean processedExpectedArguments = false;
 		private boolean expectAnotherArgument = false;
 		private boolean zeroArgumentsIsPossible = false;
 
-		private List<Integer> columnArguments = new ArrayList<Integer>();
+		private List<Integer> columnArguments = new ArrayList<>();
 
 		protected void processor1(String languageElement) throws Exception {
 		}
@@ -1638,17 +1656,17 @@ public class FunctionalSQLCompiler {
 		 * When function wants to go to the next (optional!!) processing step, this method should be called.
 		 */
 		protected void nextStep() {
-			status++;
+			step++;
 		}
 
 		protected void nextStep(int nextStep) {
-			status = nextStep;
+			step = nextStep;
 		}
 
 		/** When function wants to go to the next (mandatory!!) processing step, this method should be called.
 		*/
 		protected void nextMandatoryStep() {
-			status++;
+			step++;
 			expectAnotherArgument = true;
 		}
 
@@ -1686,7 +1704,7 @@ public class FunctionalSQLCompiler {
 				2>
 				  Columns can be noted as table.column.
 				*/
-				if (columnArguments.contains(new Integer(status))) {
+				if (columnArguments.contains(step)) {
 					if ("ref".equals(languageElement)) {
 						Ref ref = new Ref();
 						ref.execute();
@@ -1696,7 +1714,7 @@ public class FunctionalSQLCompiler {
 					}
 				}
 
-				switch (status) {
+				switch (step) {
 					case 1:
 
 					  /* A function can indicate that 'no arguments' is possible. If this is not indicated, the next element
@@ -1766,7 +1784,7 @@ public class FunctionalSQLCompiler {
 			/* If function continues (as it must at this point) and a next argument is expected, then the next element should be a ','.
 			*/
 			if (expectAnotherArgument && !",".equals(languageElement)) {
-				syntaxError(ERR_EXP_COMMA);
+				syntaxError(ERR_EXP_COMMA, languageElement);
 			}
 
 			return true;
