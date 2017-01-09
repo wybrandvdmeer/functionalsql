@@ -26,8 +26,8 @@ public class TestFunctionalSQLCompiler {
         c.addCustomMapping("b", "id", "c", "id");
         c.addCustomMapping("a", "id", "c", "id");
 
-        assertEquals("SELECT t0.veld, t1.veld, t3.veld2, MAX( t3.veld ) FROM a t0, b t1, c t2, c t3 WHERE t0.id = t1.id AND t0.id = t3.id AND t1.id = t2.id GROUP BY t0.veld, t1.veld, t3.veld2",
-             c.parse("a join(b, join(c)) join(newtable(c)) max(ref(c.veld, 2), a.veld, b.veld, ref(c.veld2, 2))"));
+        assertEquals("SELECT t0.field, t1.field, t3.field2, MAX( t3.field ) FROM a t0, b t1, c t2, c t3 WHERE t0.id = t1.id AND t0.id = t3.id AND t1.id = t2.id GROUP BY t0.field, t1.field, t3.field2",
+             c.parse("a join(b, join(c)) join(newtable(c)) max(ref(c.field, 2), a.field, b.field, ref(c.field2, 2))"));
     }
 
     @Test
@@ -88,7 +88,7 @@ public class TestFunctionalSQLCompiler {
     public void testGroup() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.addCustomMapping("a", "v_a", "b", "v_b");
-        assertEquals("SELECT veld1, t1.veld1 FROM a t0, b t1 WHERE t0.v_a = t1.v_b GROUP BY veld1, t1.veld1", c.parse("a join(b) group( veld1, b.veld1)"));
+        assertEquals("SELECT field1, t1.field1 FROM a t0, b t1 WHERE t0.v_a = t1.v_b GROUP BY field1, t1.field1", c.parse("a join(b) group( field1, b.field1)"));
     }
 
     @Test
