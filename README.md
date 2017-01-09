@@ -21,5 +21,6 @@ a join( b ) sum(1, a.veld1, b.veld2) -> SELECT t0.veld1, t1.veld2 FROM a t0, b t
 
 a join( (b join(c)), id, id ) -> SELECT * FROM a t0, (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id) t1 WHERE t0.id = t1.id
 
+((((a))) filter(field, 2)) -> SELECT * FROM a t0 WHERE field = 2
 
 NOTE: for the most part it is written in Java7. There are small Java8 'things'.
