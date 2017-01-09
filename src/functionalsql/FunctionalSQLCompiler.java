@@ -69,7 +69,8 @@ public class FunctionalSQLCompiler {
 	private int popCounter = 0;
 
 	private FunctionalSQLCompiler compiler;
-	private final Pattern tableOrColumnNameMatcher=Pattern.compile("[a-zA-Z0-9_]*");
+
+	private final Pattern TABLE_COLUMN_FORMAT=Pattern.compile("[a-zA-Z0-9_]*");
 
 	/**
 	 * Constructor.
@@ -819,7 +820,7 @@ public class FunctionalSQLCompiler {
 	}
 
 	protected boolean isTableOrColumnName(String value) {
-		return tableOrColumnNameMatcher.matcher(value).matches();
+		return TABLE_COLUMN_FORMAT.matcher(value).matches();
 	}
 
 	/**
