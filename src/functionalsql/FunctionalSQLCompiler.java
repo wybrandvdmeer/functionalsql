@@ -72,6 +72,8 @@ public class FunctionalSQLCompiler {
 
 	private final Pattern TABLE_COLUMN_FORMAT=Pattern.compile("[a-zA-Z0-9_]*");
 
+	private final Pattern NUMMERIC_FORMAT=Pattern.compile("[-]*[0-9.]*");
+
 	/**
 	 * Constructor.
 	 */
@@ -829,20 +831,7 @@ public class FunctionalSQLCompiler {
 	 * @return True is string is nummerical. Otherwise false.
 	 */
 	protected boolean isNummeric(String s) {
-		for (int idx = 0; idx < s.getBytes().length; idx++) {
-			int c = s.getBytes()[idx];
-
-			/* It can be a negative number: which is still a number. */
-			if (idx == 0 && c == '-') {
-				continue;
-			}
-
-			if (!Character.isDigit(c) && c != '.') {
-				return false;
-			}
-		}
-
-		return true;
+		return NUMMERIC_FORMAT.matcher(s).matches();
 	}
 
 	private class Statement extends Function {
