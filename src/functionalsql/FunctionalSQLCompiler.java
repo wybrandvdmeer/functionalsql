@@ -13,67 +13,47 @@ import java.util.Map.Entry;
  * Functional sql compiler.
  */
 public class FunctionalSQLCompiler {
-	/** Error. */
+
+	public static final String ERR_VALUE_SHOULD_BE_QUOTED = "Value (%s) should be quoted.";
+
 	public static final String ERR_UNEXPECTED_END_OF_STATEMENT = "Unexpected end of statement.";
 
-	/** Error. */
 	public static final String ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION = "If table has multiple instances, use the ref function (table=%s).";
 
-	/** Error. */
 	public static final String ERR_TABLE_REFERENCE_SHOULD_BE_EQUAL_OR_GREATER_THEN_ONE = "Reference should be equal or greater than one (%s).";
 
-	/** Error. */
 	public static final String ERR_TABLE_REFERENCE_IS_NOT_CORRECT = "Table reference (%s) is not correct.";
 
-	/** Error. */
 	public static final String ERR_REFERING_TO_A_NON_EXISTING_TABLE = "Refering to a non existing table (%s).";
 
-	/** Error. */
 	public static final String ERR_TABLE_REFERENCE_SHOULD_BE_NUMMERICAL = "Table reference should be nummerical (%s).";
 
-	/** Error. */
-	public static final String ERR_UNEXPECTED_END = "Unexpected end of function.";
+	public static final String UNEXPECTED_END_OF_FUNCTION = "Unexpected end of function.";
 
-	/** Error. */
 	public static final String ERR_JOIN_SHOULD_FOLLOW_JOIN = "A join can only be followed by another join. Instead found '%s'.";
 
-	/** Error. */
 	public static final String ERR_EXP_OPENING_BRACKET = "Expected opening bracket.";
 
-	/** Error. */
 	public static final String ERR_EXP_COMMA = "Expected ','.";
 
-	/** Error. */
 	public static final String ERR_MISSING_END_QUOTE = "Missing end quote.";
 
-	/** Error. */
 	public static final String ERR_RESTRICTED_KEY_WORD_USE_QUOTES = "Restricted keyword: %s. Use quotes.";
 
-	/** Error. */
 	public static final String ERR_NULL_TABLE = "Null table.";
 
-	/** Error. */
 	public static final String ERR_NULL_FIELD = "Null field.";
 
-	/** Error. */
-	public static final String ERR_NO_WILD_CARD_IN_PATTERN = "Pattern (%s) contains no wildcard.";
-
-	/** Error. */
 	public static final String ERR_FUNCTION_HAS_NO_ARGUMENTS = "Function has no arguments.";
 
-	/** Error. */
 	public static final String ERR_SELECT_ALREADY_DEFINED = "Select clause (%s) is already defined.";
 
-	/** Error. */
 	public static final String ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT = "No join columns defined in statement and no custom mapping found.";
 
-	/** Error. */
 	public static final String ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS = "Default mapping has no equal columns.";
 
-	/** Error. */
 	public static final String ERR_UNKNOWN_OPERATOR = "Unknown operator %s.";
 
-	/** Error. */
 	public static final String ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS = "Function has to many arguments.";
 
 	private static String HELP = "<table> function1 function2 ... ";
@@ -111,9 +91,7 @@ public class FunctionalSQLCompiler {
 		functions.put("max", Max.class);
 		functions.put("filter", Filter.class);
 		functions.put("filterdate", FilterDate.class);
-		functions.put("stringfilter", StringFilter.class);
 		functions.put("notfilter", NotFilter.class);
-		functions.put("stringnotfilter", StringNotFilter.class);
 	}
 
 	/**
@@ -359,8 +337,8 @@ public class FunctionalSQLCompiler {
 	 * @param column The column on which to filter.
 	 * @param values The values on which to filter.
 	 */
-	protected void filter(String column, List<String> values) {
-		filter(column, values, true, false);
+	protected void filter(String column, List<String> values) throws Exception {
+		filter(column, values, true);
 	}
 
 	/**
@@ -369,28 +347,16 @@ public class FunctionalSQLCompiler {
 	 * @param column The column on which to filter.
 	 * @param values The values on which to filter.
 	 * @param inclusive If filter should be inclusive or exclusive.
-	 * @param stringFilter If true then a string filter is forced, e.g. using quoted around the value.
 	 */
-	protected void filter(String column, List<String> values, boolean inclusive, boolean stringFilter) {
+	protected void filter(String column, List<String> values, boolean inclusive) throws Exception {
 		/* If list is null or has no values, it is a program error.
 		*/
 		assert (values != null && values.size() > 0);
 
-		boolean searchArgIsString = false;
-
-		/* RULE: If user filters on only nummerical values, the column will be treated as a nummerical, e.g. not using quotes.
-		If one or more values have characters, then quotes will be used.
-		*/
-		for (String value : values) {
-			if (!isNummerical(value)) {
-				searchArgIsString = true;
+		for(String value : values) {
+			if(!isNummerical(value) && !isQuoted(value)) {
+				syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
 			}
-		}
-
-		/* StringFilter is true, overrides everything.
-		*/
-		if (stringFilter) {
-			searchArgIsString = true;
 		}
 
 		String filterClause;
@@ -400,20 +366,15 @@ public class FunctionalSQLCompiler {
 		if (values.size() == 0) {
 			filterClause = String.format("%s %s NULL", column, inclusive ? "IS" : "IS NOT");
 		} else if (values.size() == 1) {
-			filterClause = String.format("%s %s %s%s%s",
+			filterClause = String.format("%s %s %s",
 			                             column,
 			                             inclusive ? "=" : "!=",
-			                             searchArgIsString ? "'" : "",
-			                             values.get(0),
-			                             searchArgIsString ? "'" : "");
+			                             values.get(0));
 		} else {
 			String argumentListINFunction = inclusive ? " IN (" : " NOT IN (";
 
 			for (int idx = 0; idx < values.size(); idx++) {
-				argumentListINFunction += String.format(" %s%s%s",
-				                                        searchArgIsString ? "'" : "",
-				                                        values.get(idx),
-				                                        searchArgIsString ? "'" : "");
+				argumentListINFunction += String.format(" %s", values.get(idx));
 
 				if (idx < values.size() - 1) {
 					argumentListINFunction += ",";
@@ -428,6 +389,10 @@ public class FunctionalSQLCompiler {
 		if (!getTopStatement().filterClauses.contains(filterClause)) {
 			getTopStatement().filterClauses.add(filterClause);
 		}
+	}
+
+	private boolean isQuoted(String value) {
+		return value.getBytes()[0] == '\''; // End quote is checked by the Function class.
 	}
 
 	private CustomMapping getCustomMapping(String table1, String column1, String table2) {
@@ -731,14 +696,11 @@ public class FunctionalSQLCompiler {
 	 * @throws Exception Thrown in case of an error.
 	 */
 	protected void like(String column, String value) throws Exception {
-		/* Check if pattern contains a wild-card. If not, throw an error.
-		Note: Strictly speaking is this error check not necessary.
-		*/
-		if (value.indexOf('%') < 0) {
-			syntaxError(ERR_NO_WILD_CARD_IN_PATTERN, value);
+		if(!isNummerical(value) && !isQuoted(value)) {
+			syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
 		}
 
-		getTopStatement().filterClauses.add(String.format("%s LIKE '%s'", column, value));
+		getTopStatement().filterClauses.add(String.format("%s LIKE %s", column, value));
 	}
 
 	/**
@@ -1241,24 +1203,6 @@ public class FunctionalSQLCompiler {
 	}
 
 	/**
-	 * Syntax: stringnotfilter( column , value1 , value2 , ... )
-	 */
-	private class StringNotFilter extends Filter {
-		public StringNotFilter() {
-			super(false, true);
-		}
-	}
-
-	/**
-	 * Syntax: stringfilter( column , value1 , value2 , ... )
-	 */
-	private class StringFilter extends Filter {
-		public StringFilter() {
-			super(true, true);
-		}
-	}
-
-	/**
 	 * Syntax: notfilter( column , value1 , value2 , ... )
 	 */
 	private class NotFilter extends Filter {
@@ -1271,7 +1215,7 @@ public class FunctionalSQLCompiler {
 	 * Syntax: filter( column , value1 , value2 , ... )
 	 */
 	private class Filter extends Function {
-		private boolean inclusive = true, stringFilter = false;
+		private boolean inclusive = true;
 
 		public Filter() {
 			argumentsTakesTableOrColumn(1);
@@ -1280,12 +1224,6 @@ public class FunctionalSQLCompiler {
 		public Filter(boolean inclusive) {
 			this();
 			this.inclusive = inclusive;
-		}
-
-		public Filter(boolean inclusive, boolean stringFilter) {
-			this();
-			this.inclusive = inclusive;
-			this.stringFilter = stringFilter;
 		}
 
 		/* FIND COLUMN ON WHICH TO FILTER.
@@ -1302,7 +1240,7 @@ public class FunctionalSQLCompiler {
 		}
 
 		public void post() throws Exception {
-			filter(column, values, inclusive, stringFilter);
+			filter(column, values, inclusive);
 		}
 	}
 
@@ -1719,9 +1657,7 @@ public class FunctionalSQLCompiler {
 
 			/* Function should always begin with an opening bracket.
 			*/
-			String languageElement = getQuotedValue(pop());
-
-			if (!"(".equals(languageElement)) {
+			if (!"(".equals(pop())) {
 				syntaxError(ERR_EXP_OPENING_BRACKET);
 			}
 
@@ -1730,7 +1666,15 @@ public class FunctionalSQLCompiler {
 				*/
 				expectAnotherArgument = false;
 
-				languageElement = getQuotedValue(pop());
+				String languageElement = pop();
+
+				if("'".equals(languageElement)) {
+					languageElement = "'" + pop() + "'";
+
+					if(!"'".equals(pop())) {
+						syntaxError(ERR_MISSING_END_QUOTE);
+					}
+				}
 
 				/* If argument is denoted as a table/column argument, do some table/column processing.
 				The processing consists of 2 things:
@@ -1798,7 +1742,7 @@ public class FunctionalSQLCompiler {
 
 				if (!functionContinues) {
 					if (expectAnotherArgument) {
-						syntaxError(ERR_UNEXPECTED_END);
+						syntaxError(UNEXPECTED_END_OF_FUNCTION);
 					} else {
 						break;
 					}
@@ -1808,22 +1752,6 @@ public class FunctionalSQLCompiler {
 			if (functionContinues) {
 				syntaxError(ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
 			}
-		}
-
-		private String getQuotedValue(String value) throws Exception {
-			/* Value can begin and end with a quote (').
-			*/
-			if ("'".equals(value)) {
-				value = pop();
-
-				/* Consume (and check) the end quote.
-				*/
-				if (!"'".equals(pop())) {
-					syntaxError(ERR_MISSING_END_QUOTE);
-				}
-			}
-
-			return value;
 		}
 
 		private boolean functionContinues(boolean expectAnotherArgument) throws Exception {

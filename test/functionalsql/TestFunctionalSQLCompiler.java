@@ -1,11 +1,26 @@
 package functionalsql;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class TestFunctionalSQLCompiler {
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    @Test
+    public void testMissingEndQuote() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(FunctionalSQLCompiler.ERR_MISSING_END_QUOTE);
+
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a filter(field, 'value");
+    }
+
     @Test
     public void testSelect() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
@@ -82,6 +97,13 @@ public class TestFunctionalSQLCompiler {
     public void testLike() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         assertEquals( "SELECT * FROM a t0 WHERE v LIKE 'a%b'", c.parse("a like( v, 'a%b')"));
+        assertEquals( "SELECT * FROM a t0 WHERE v LIKE 1", c.parse("a like(v, 1)"));
+
+        try {
+            c.parse("a like(v, a)");
+        } catch(Exception e) {
+            checkException(e, "Value (a) should be quoted.");
+        }
     }
 
     @Test
@@ -145,16 +167,25 @@ public class TestFunctionalSQLCompiler {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.addCustomMapping("a", "va", "b", "vb");
 
+        assertEquals("SELECT * FROM a t0 WHERE field = '1'", c.parse("a filter(field, '1')"));
+        assertEquals("SELECT * FROM a t0 WHERE field = 1", c.parse("a filter(field, 1)"));
         assertEquals("SELECT * FROM a t0 WHERE v = 'a b'", c.parse("a filter(v, 'a b')"));
-        assertEquals("SELECT * FROM a t0 WHERE v IN ( 'a', 'b' )", c.parse("a filter(v, a, b)"));
-        assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND v IN ( 'a', 'b' )", c.parse("a join(b) filter(v, a, b)"));
-        assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND t1.v IN ( 'a', 'b' )", c.parse("a join(b) filter(b.v, a, b)"));
+        assertEquals("SELECT * FROM a t0 WHERE v IN ( 'a', 'b' )", c.parse("a filter(v, 'a', 'b')"));
+        assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND v IN ( 'a', 'b' )", c.parse("a join(b) filter(v, 'a', 'b')"));
+        assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND t1.v IN ( 'a', 'b' )", c.parse("a join(b) filter(b.v, 'a', 'b')"));
 
         try {
-            c.parse("a filter('1')");
+            c.parse("a filter(1)");
             fail();
         } catch(Exception e) {
-            checkException(e, FunctionalSQLCompiler.ERR_UNEXPECTED_END);
+            checkException(e, FunctionalSQLCompiler.UNEXPECTED_END_OF_FUNCTION);
+        }
+
+        try {
+            c.parse("a filter(1, a)");
+            fail();
+        } catch(Exception e) {
+            checkException(e, "Value (a) should be quoted.");
         }
     }
 
@@ -174,20 +205,6 @@ public class TestFunctionalSQLCompiler {
             checkException(e, "Unknown operator");
         }
 
-    }
-
-    @Test
-    public void StringFilter() throws Exception {
-        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        assertEquals("SELECT * FROM a t0 WHERE v IN ( '1', 'a b' )", c.parse("a stringfilter(v, 1, 'a b')"));
-        assertEquals("SELECT * FROM a t0 WHERE v = '1'", c.parse("a stringfilter(v, 1)"));
-    }
-
-    @Test
-    public void StringNotFilter() throws Exception {
-        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        assertEquals("SELECT * FROM a t0 WHERE v != 1", c.parse("a notfilter(v, 1)"));
-        assertEquals("SELECT * FROM a t0 WHERE v NOT IN ( '1', 'a b' )", c.parse("a notfilter(v, 1, 'a b')"));
     }
 
     @Test
