@@ -144,10 +144,18 @@ public class TestFunctionalSQLCompiler {
     public void testFilter() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.addCustomMapping("a", "va", "b", "vb");
+
         assertEquals("SELECT * FROM a t0 WHERE v = 'a b'", c.parse("a filter(v, 'a b')"));
         assertEquals("SELECT * FROM a t0 WHERE v IN ( 'a', 'b' )", c.parse("a filter(v, a, b)"));
         assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND v IN ( 'a', 'b' )", c.parse("a join(b) filter(v, a, b)"));
         assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND t1.v IN ( 'a', 'b' )", c.parse("a join(b) filter(b.v, a, b)"));
+
+        try {
+            c.parse("a filter('1')");
+            fail();
+        } catch(Exception e) {
+            checkException(e, FunctionalSQLCompiler.ERR_UNEXPECTED_END);
+        }
     }
 
     @Test

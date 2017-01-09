@@ -1292,7 +1292,7 @@ public class FunctionalSQLCompiler {
 		*/
 		protected void processor1(String s) throws Exception {
 			column = s;
-			nextStep();
+			nextMandatoryStep();
 		}
 
 		/* FIND VALUES ON WHICH TO FILTER.
