@@ -171,7 +171,7 @@ public class FunctionalSQLCompiler {
 		*/
 		printSQL = false;
 		originalStatement = statement;
-		textElements = new ArrayList<String>();
+		textElements = new ArrayList<>();
 		compiler = this;
 
 		/* Chop statement into language elements. The ')' token is put at the end of the statement, because a statement should
@@ -1591,7 +1591,7 @@ public class FunctionalSQLCompiler {
 
 				public String next() {
 					if (isQuote(chars[pointer])) {
-						quotedArea = (quotedArea ? false : true);
+						quotedArea = !quotedArea;
 						return "" + chars[pointer++];
 					}
 
