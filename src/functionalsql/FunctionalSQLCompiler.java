@@ -805,7 +805,7 @@ public class FunctionalSQLCompiler {
 		}
 
 		for(String s : tableAndColumn) {
-			checkIfArgIsAlphaNummer(s);
+			checkTableOrColumnFormat(s);
 		}
 
 		if (tableAndColumn.length == 1) {
@@ -815,7 +815,7 @@ public class FunctionalSQLCompiler {
 		return getAlias(tableAndColumn[0]) + "." + tableAndColumn[1];
 	}
 
-	private void checkIfArgIsAlphaNummer(String s) throws Exception {
+	private void checkTableOrColumnFormat(String s) throws Exception {
 		if(s != null && !isTableOrColumnName(s)) {
 			syntaxError(ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME, s);
 		}
@@ -1424,7 +1424,7 @@ public class FunctionalSQLCompiler {
 
 				joinTable = "(" + statement.sql + ")";
 			} else {
-				checkIfArgIsAlphaNummer(s);
+				checkTableOrColumnFormat(s);
 				joinTable = s;
 			}
 
@@ -1455,7 +1455,7 @@ public class FunctionalSQLCompiler {
 				return;
 			}
 
-			checkIfArgIsAlphaNummer(s);
+			checkTableOrColumnFormat(s);
 
 			joinFieldDriveTable = s;
 
@@ -1478,7 +1478,7 @@ public class FunctionalSQLCompiler {
 				return;
 			}
 
-			checkIfArgIsAlphaNummer(s);
+			checkTableOrColumnFormat(s);
 			joinFieldJoinTable = s;
 
 			nextStep();
