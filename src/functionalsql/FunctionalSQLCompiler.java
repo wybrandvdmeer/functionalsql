@@ -1013,8 +1013,6 @@ public class FunctionalSQLCompiler {
         }
 	}
 
-	/*
-
 	/**
 	 * Syntax:
 	 *
