@@ -1,5 +1,5 @@
 Do you also dislike big and complex sql statements?
-Or loose count over all the aliases you created in a SQL statement.
+Or loose count over all the aliases you created in a SQL statement?
 Or are you completely annoyed to type over and over the same type
 of sql for a certain database?
 
