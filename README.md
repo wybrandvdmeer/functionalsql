@@ -45,3 +45,5 @@ Some more examples (Functional SQL -> SQL):
     a join( (b join(c)), id, id ) -> SELECT * FROM a t0, (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id) t1 WHERE t0.id = t1.id
 
     ((((a))) filter(field, 2)) -> SELECT * FROM a t0 WHERE field = 2
+    
+    a join(b) group(field, b.field) -> SELECT field, t1.field FROM a t0, b t1 WHERE t0.id = t1.id GROUP BY field, t1.field
