@@ -56,7 +56,7 @@ public class FunctionalSQLCompiler {
 
 	private static String HELP = "<table> function1 function2 ... ";
 
-	private Map<String, Class<? extends Function>> functions = new HashMap<String, Class<? extends Function>>();
+	private Map<String, Class<? extends Function>> functions = new HashMap<>();
 
 	private List<Statement> statements = new ArrayList<>();
 
@@ -74,11 +74,18 @@ public class FunctionalSQLCompiler {
 
 	private final Pattern NUMMERIC_FORMAT=Pattern.compile("[-]*[0-9.]*");
 
+	protected enum JOIN_TYPE {
+		INNER, LEFT, RIGHT, FULL;
+	}
 	/**
 	 * Constructor.
 	 */
 	public FunctionalSQLCompiler() {
 		functions.put("join", Join.class);
+        functions.put("innerjoin", InnerJoin.class);
+		functions.put("leftjoin", LeftJoin.class);
+		functions.put("rightjoin", RightJoin.class);
+		functions.put("fulljoin", FullJoin.class);
 		functions.put("printSQL", null);
 		functions.put("print", Print.class);
 		functions.put("like", Like.class);
@@ -546,47 +553,27 @@ public class FunctionalSQLCompiler {
 	}
 
 	/**
-	 * To join the tables this function must use the custom-mappings.
-	 */
-	protected void join(String driveTable, String joinTable) throws Exception {
-		join(driveTable, getAlias(driveTable), null, joinTable, getAlias(joinTable), null);
-	}
-
-	/**
-	 * Join method.
-	 *
-	 * @param driveTable The drive table.
-	 * @param aliasDriveTable alias drive table.
-	 * @param joinTable Join table.
-	 * @param aliasJoinTable Alias join table.
-	 * @throws Exception Thrown in case of an error.
-	 */
-	protected void join(String driveTable,
-	                    String aliasDriveTable,
-	                    String joinTable,
-	                    String aliasJoinTable) throws Exception {
-		join(driveTable, aliasDriveTable, null, joinTable, aliasJoinTable, null);
-	}
-
-	/**
 	 * Function can be used by macros who want create their own joins.
 	 *
 	 * @param driveTable The drive table.
 	 * @param joinColumnDriveTable Join column drive table.
 	 * @param joinTable The join table.
 	 * @param joinColumnJoinTable Join column join table.
+	 * @param joinType join-type.
 	 */
 	protected void join(String driveTable,
 	                    String aliasDriveTable,
 	                    String joinColumnDriveTable,
 	                    String joinTable,
 	                    String aliasJoinTable,
-	                    String joinColumnJoinTable) throws Exception {
-		/* Expand the from clause with the join table if necessary.
-		*/
+	                    String joinColumnJoinTable,
+						JOIN_TYPE joinType) throws Exception {
+
 		String fromClause = String.format("%s %s", joinTable, aliasJoinTable);
 
-		if (!getTopStatement().fromClauses.contains(fromClause)) {
+		/* Expand the from clause with the join table if necessary.
+		*/
+		if(joinType == null && !getTopStatement().fromClauses.contains(fromClause)) {
 			getTopStatement().fromClauses.add(fromClause);
 		}
 
@@ -639,8 +626,36 @@ public class FunctionalSQLCompiler {
 			                            joinColumnDriveTable);
 		}
 
-		if (!getTopStatement().filterClauses.contains(clause)) {
-			getTopStatement().filterClauses.add(clause);
+		/* The inner join is depicted as SELECT ... FROM a, b WHERE ... (instead of using the JOIN keyword).
+		*/
+		if(joinType == null) {
+			if (!getTopStatement().filterClauses.contains(clause)) {
+				getTopStatement().filterClauses.add(clause);
+			}
+		} else {
+			String joinClause=null;
+
+			switch (joinType) {
+                case INNER:
+                    joinClause = String.format("INNER JOIN %s ON %s", fromClause, clause);
+                    break;
+
+				case LEFT:
+					joinClause = String.format("LEFT JOIN %s ON %s", fromClause, clause);
+					break;
+
+				case RIGHT:
+					joinClause = String.format("RIGHT JOIN %s ON %s", fromClause, clause);
+					break;
+
+				case FULL:
+					joinClause = String.format("FULL JOIN %s ON %s", fromClause, clause);
+					break;
+			}
+
+			if (!getTopStatement().joinClauses.contains(joinClause)) {
+				getTopStatement().joinClauses.add(joinClause);
+			}
 		}
 	}
 
@@ -834,7 +849,25 @@ public class FunctionalSQLCompiler {
 		return NUMMERIC_FORMAT.matcher(s).matches();
 	}
 
-	private class Statement extends Function {
+    private Function exec(Class<? extends Function> function, String driveTable) throws Exception {
+		/* If you want to instantiate an inner class, you have to search for the constructor which takes the super class as
+		an argument.
+		*/
+        Constructor<? extends Function> cons = function.getDeclaredConstructor(function.getEnclosingClass());
+        Function instance = cons.newInstance(new Object[] { compiler });
+
+        if (instance instanceof Join) {
+            ((Join) instance).setDriveTable(driveTable, getAlias(driveTable));
+        }
+
+        instance.execute();
+
+        return instance;
+    }
+
+    /* Strange: Statement has to be not private, otherwise exec cannot call Statement.
+    */
+	protected class Statement extends Function {
 		public String[] clauses = new String[3]; // Contains SELECT, FROM, ORDER AND GROUP.
 		public List<String> fromClauses = new ArrayList<String>();
 		public List<String> joinClauses = new ArrayList<String>();
@@ -862,17 +895,7 @@ public class FunctionalSQLCompiler {
 					if (function == null) {
 						printSQL = true; /* PrintSQL can popup anytime. */
 					} else {
-						/* If you want to instantiate an inner class, you have to search for the constructor which takes the super class as
-						an argument.
-						*/
-						Constructor<? extends Function> cons = function.getDeclaredConstructor(function.getEnclosingClass());
-						Function instance = cons.newInstance(new Object[] { compiler });
-
-						if (instance instanceof Join) {
-							((Join) instance).setDriveTable(getDriveTableOfQuery(), getAlias(getDriveTableOfQuery()));
-						}
-
-						instance.execute();
+						Function instance = exec(function, getDriveTableOfQuery());
 
 						if (instance instanceof Statement) {
 							String nestedQuery = ((Statement) instance).sql;
@@ -939,11 +962,15 @@ public class FunctionalSQLCompiler {
 				}
 			}
 
-			boolean where = true;
+			Collections.sort(joinClauses);
+
+			for(String clause : joinClauses) {
+				sql += ( " " + clause);
+			}
 
 			Collections.sort(filterClauses);
 
-			where = joinClauses.size() == 0;
+			boolean where=true;
 
 			for (String clause : filterClauses) {
 				if (where) {
@@ -1356,6 +1383,30 @@ public class FunctionalSQLCompiler {
 		}
 	}
 
+	private class InnerJoin extends Join {
+	    public InnerJoin() {
+	        super(JOIN_TYPE.INNER);
+        }
+    }
+
+	private class LeftJoin extends Join {
+		public LeftJoin() {
+			super(JOIN_TYPE.LEFT);
+		}
+	}
+
+	private class RightJoin extends Join {
+		public RightJoin() {
+			super(JOIN_TYPE.RIGHT);
+		}
+	}
+
+	private class FullJoin extends Join {
+		public FullJoin() {
+			super(JOIN_TYPE.FULL);
+		}
+	}
+
 	/**
 	 Syntax:
 	    join( joinTable )
@@ -1375,7 +1426,13 @@ public class FunctionalSQLCompiler {
 		private String joinFieldDriveTable = null;
 		private String joinFieldJoinTable = null;
 
+		private JOIN_TYPE joinType=null;
+
 		public Join() {
+		}
+
+		public Join(JOIN_TYPE joinType) {
+			this.joinType = joinType;
 		}
 
 		public void setDriveTable(String driveTable, String aliasDriveTable) {
@@ -1431,18 +1488,18 @@ public class FunctionalSQLCompiler {
 		/* FIND JOIN FIELD DRIVE TABLE OR ANOTHER JOIN.
 		*/
 		protected void processor2(String s) throws Exception {
-			/* Check if user wants another join.
-			*/
-			if ("join".equals(s)) {
-				Join join = new Join();
-				join.setDriveTable(joinTable, aliasJoinTable);
-				join.execute();
 
-				/* If user programs a join, it can only be followed by anthor join.
+            Class<? extends Function> function = functions.get(s);
+
+            if(function != null && Join.class.isAssignableFrom(function)) {
+                exec(function, joinTable);
+
+                /* If user programs a join, it can only be followed by anthor join.
 				*/
-				nextStep(4);
-				return;
-			}
+                nextStep(4);
+
+                return;
+            }
 
 			checkTableOrColumnFormat(s);
 
@@ -1454,18 +1511,17 @@ public class FunctionalSQLCompiler {
 		/* FIND JOIN FIELD JOIN TABLE OR ANOTHER JOIN.
 		*/
 		protected void processor3(String s) throws Exception {
-			/* Check if user wants another join.
-			*/
-			if ("join".equals(s)) {
-				Join join = new Join();
-				join.setDriveTable(joinTable, aliasJoinTable);
-				join.execute();
+            Class<? extends Function> function = functions.get(s);
 
-				/* If user programs a join, it can only be followed by anthor join.
+            if(function != null && Join.class.isAssignableFrom(function)) {
+                exec(function, joinTable);
+
+                /* If user programs a join, it can only be followed by anthor join.
 				*/
-				nextStep(4);
-				return;
-			}
+                nextStep(4);
+
+                return;
+            }
 
 			checkTableOrColumnFormat(s);
 			joinFieldJoinTable = s;
@@ -1476,13 +1532,12 @@ public class FunctionalSQLCompiler {
 		/* CHECK IF USER PROGRAMMED ANOTHER JOIN(S).
 		*/
 		protected void processor4(String s) throws Exception {
-			/* Check if user wants another join.
-			*/
-			if ("join".equals(s)) {
-				Join join = new Join();
-				join.setDriveTable(joinTable, aliasJoinTable);
-				join.execute();
-			} else {
+
+            Class<? extends Function> function = functions.get(s);
+
+            if(function != null && Join.class.isAssignableFrom(function)) {
+                exec(function, joinTable);
+            } else {
 				syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, s);
 			}
 
@@ -1491,7 +1546,7 @@ public class FunctionalSQLCompiler {
 		}
 
 		public void post() throws Exception {
-			join(driveTable, aliasDriveTable, joinFieldDriveTable, joinTable, aliasJoinTable, joinFieldJoinTable);
+			join(driveTable, aliasDriveTable, joinFieldDriveTable, joinTable, aliasJoinTable, joinFieldJoinTable, joinType);
 		}
 	}
 
