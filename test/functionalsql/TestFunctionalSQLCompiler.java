@@ -133,8 +133,8 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testGroup() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "v_a", "b", "v_b");
-        assertEquals("SELECT field1, t1.field1 FROM a t0, b t1 WHERE t0.v_a = t1.v_b GROUP BY field1, t1.field1", c.parse("a join(b) group( field1, b.field1)"));
+        c.addCustomMapping("a", "id", "b", "id");
+        assertEquals("SELECT field, t1.field FROM a t0, b t1 WHERE t0.id = t1.id GROUP BY field, t1.field", c.parse("a join(b) group(field, b.field)"));
     }
 
     @Test
