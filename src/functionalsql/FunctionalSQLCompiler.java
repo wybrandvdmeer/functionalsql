@@ -623,24 +623,24 @@ public class FunctionalSQLCompiler {
 
 		/* Expand the where clause if necessary.
 		*/
-		String whereClause;
+		String clause;
 
 		if (aliasToNumber(aliasDriveTable) < aliasToNumber(aliasJoinTable)) {
-			whereClause = String.format("%s.%s = %s.%s",
+			clause = String.format("%s.%s = %s.%s",
 			                            aliasDriveTable,
 			                            joinColumnDriveTable,
 			                            aliasJoinTable,
 			                            joinColumnJoinTable);
 		} else {
-			whereClause = String.format("%s.%s = %s.%s",
+			clause = String.format("%s.%s = %s.%s",
 			                            aliasJoinTable,
 			                            joinColumnJoinTable,
 			                            aliasDriveTable,
 			                            joinColumnDriveTable);
 		}
 
-		if (!getTopStatement().joinClauses.contains(whereClause)) {
-			getTopStatement().joinClauses.add(whereClause);
+		if (!getTopStatement().filterClauses.contains(clause)) {
+			getTopStatement().filterClauses.add(clause);
 		}
 	}
 
@@ -939,18 +939,7 @@ public class FunctionalSQLCompiler {
 				}
 			}
 
-			Collections.sort(joinClauses);
-
 			boolean where = true;
-
-			for (String clause : joinClauses) {
-				if (where) {
-					sql += String.format(" WHERE %s", clause);
-					where = false;
-				} else {
-					sql += String.format(" AND %s", clause);
-				}
-			}
 
 			Collections.sort(filterClauses);
 
