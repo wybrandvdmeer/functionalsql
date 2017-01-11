@@ -1,5 +1,5 @@
 Do you also dislike big and complex sql statements?
-Or loose count over all the aliases you created in a SQL statement?
+Or lose count over all the aliases you created in a SQL statement?
 Or are you completely annoyed to type over and over the same type
 of sql for a certain database?
 
@@ -9,7 +9,7 @@ You do not have to worry about aliases anymore.
 
 Also it is possible to write you own specific functions for 
 a specific database. In this way you can avoid to write again the same SQL for a certain database. Just use
-the specific functions you created.
+the specific functions you created. You can also give standard FS functions your own name.
 
 This project consists of a compiler which takes as input an FS-statement and outputs the relating SQL-statement. The compiler can be fed
 in advance information of your database. For instance how tables are relating to each other. This information

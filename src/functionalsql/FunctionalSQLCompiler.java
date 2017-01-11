@@ -10,6 +10,8 @@ import java.util.regex.Pattern;
  */
 public class FunctionalSQLCompiler {
 
+    public static final String ERR_UNKNOWN_FUNCTION = "Unknown function (%s).";
+
 	public static final String ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME = "Wrong format table or column name: %s.";
 
 	public static final String ERR_VALUE_SHOULD_BE_QUOTED = "Value (%s) should be quoted.";
@@ -102,6 +104,17 @@ public class FunctionalSQLCompiler {
 		functions.put("filterdate", FilterDate.class);
 		functions.put("notfilter", NotFilter.class);
 	}
+
+	public void renameFunction(String existingFunction, String newFunction) throws Exception {
+        Class<? extends Function> function = functions.get(existingFunction);
+        if(function == null) {
+            syntaxError(ERR_UNKNOWN_FUNCTION, existingFunction);
+        }
+
+        functions.remove(existingFunction);
+
+        functions.put(newFunction, function);
+    }
 
 	/**
 	 * To add customized functions.
@@ -925,7 +938,7 @@ public class FunctionalSQLCompiler {
 						*/
 						fromClauses.add(String.format("%s %s", table, getAlias(table)));
 					} else {
-						syntaxError("Unknown function: " + token);
+						syntaxError(ERR_UNKNOWN_FUNCTION, token);
 					}
 				}
 			}

@@ -300,6 +300,28 @@ public class TestFunctionalSQLCompiler {
                 c.parse("a fulljoin(b) leftjoin(c)"));
     }
 
+    @Test
+    public void testRenameFunction() throws Exception {
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.renameFunction("fulljoin", "fjoin");
+        c.addCustomMapping("a", "id", "b", "id");
+        assertEquals("SELECT * FROM a t0 FULL JOIN b t1 ON t0.id = t1.id", c.parse("a fjoin(b)"));
+
+        try {
+            c.parse("a fulljoin(b)");
+            fail();
+        } catch(Exception e) {
+            checkException(e, "Unknown function (fulljoin).");
+        }
+
+        try {
+            c.renameFunction("fulljoin", "fjoin");
+            fail();
+        } catch(Exception e) {
+            checkException(e, "Unknown function (fulljoin).");
+        }
+    }
+
     private void checkException(Throwable e , String message) {
         if( e.getMessage().indexOf(message) < 0 ) {
             fail();
