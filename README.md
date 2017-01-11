@@ -1,26 +1,45 @@
-Functional sql is an attempt to make a more functional version of sql. 
+Do you also dislike big and complex sql statements?
+Or loose count over all the aliases you created in a SQL statement.
+Or are you completely annoyed to type over and over the same type
+of sql for a certain database?
 
-Functionalsql is written as a compiler (very WIP) which takes as input 'functional sql' and creates as output plain sql.
+Don't worry anymore, there is now Functional SQL (FS). FS divides the sql language
+up into very small and simple functions, which you can combine to create very complex SQL statements. 
+You do not have to worry about aliases anymore.
 
-Functionalsql is less lengthy than sql because each function takes care of creating its own sql clauses.
+Also it is possible to write you own specific functions for 
+a specific database. In this way you can avoid to write again the same SQL for a certain database. Just use
+the specific functions you created.
 
-Also information about the database (for instance how tables are relating to each other) can be fed to the compiler in advance. 
-The FS compiler takes this information into account when creating the sql.
+This project consists of a compiler which takes as input an FS-statement and outputs the relating SQL-statement. The compiler can be fed
+in advance information of your database. For instance how tables are relating to each other. This information
+is used when create the SQL queries.
 
-Is is also possible to extend the compiler and create a custom compiler with specific commands designed for a specific database.
+An example:
 
-Some examples (Functional SQL -> SQL):
+The FS statement 
 
-a -> SELECT * FROM a
+    a fulljoin(b, leftjoin(c, id, id), id, id) 
+    
+will create the following SQL statement:
 
-(a) -> SELECT * FROM a
+    SELECT * FROM a t0 FULL JOIN b t1 ON t0.id = t1.id LEFT JOIN c t2 ON t0.id = t2.id
 
-a join( b, veld1, veld2) -> SELECT * FROM a t0, b t1 WHERE t0.veld1 = t1.veld2
+Notice that the tables are joined on the id fields. This information can be fed in advance to the FS compiler. If so,
+the following FS-statement will be sufficient:
 
-a join( b ) sum(1, a.veld1, b.veld2) -> SELECT t0.veld1, t1.veld2 FROM a t0, b t1 WHERE a.id = b.id GROUP BY a.veld1, b.veld2
+    a fulljoin(b, leftjoin(c))
 
-a join( (b join(c)), id, id ) -> SELECT * FROM a t0, (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id) t1 WHERE t0.id = t1.id
+Some more examples (Functional SQL -> SQL):
 
-((((a))) filter(field, 2)) -> SELECT * FROM a t0 WHERE field = 2
+    a -> SELECT * FROM a
 
-NOTE: for the most part it is written in Java7. There are small Java8 'things'.
+    (a) -> SELECT * FROM a
+
+    a join( b, veld1, veld2) -> SELECT * FROM a t0, b t1 WHERE t0.veld1 = t1.veld2
+
+    a join( b ) sum(1, a.veld1, b.veld2) -> SELECT t0.veld1, t1.veld2 FROM a t0, b t1 WHERE a.id = b.id GROUP BY a.veld1, b.veld2
+
+    a join( (b join(c)), id, id ) -> SELECT * FROM a t0, (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id) t1 WHERE t0.id = t1.id
+
+    ((((a))) filter(field, 2)) -> SELECT * FROM a t0 WHERE field = 2
