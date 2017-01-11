@@ -9,11 +9,13 @@ You do not have to worry about aliases anymore.
 
 Also it is possible to write you own specific functions for 
 a specific database. In this way you can avoid to write again the same SQL for a certain database. Just use
-the specific functions you created. You can also give standard FS functions your own name.
+the specific functions you created. 
+
+And if you dislike the name of certain standard FS function? Just give it a new name.
 
 This project consists of a compiler which takes as input an FS-statement and outputs the relating SQL-statement. The compiler can be fed
 in advance information of your database. For instance how tables are relating to each other. This information
-is used when create the SQL queries.
+is used when creating the SQL queries.
 
 An example:
 
