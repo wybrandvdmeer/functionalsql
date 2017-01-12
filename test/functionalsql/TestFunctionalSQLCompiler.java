@@ -221,14 +221,7 @@ public class TestFunctionalSQLCompiler {
         assertEquals("SELECT * FROM a t0 WHERE v <= '20010101'", c.parse("a filterdate(v, 20010101, <= )"));
         assertEquals("SELECT * FROM a t0 WHERE v > '20010101'", c.parse("a filterdate(v, 20010101, > )"));
         assertEquals("SELECT * FROM a t0 WHERE v < '20010101'", c.parse("a filterdate(v, 20010101, < )"));
-
-        try {
-            c.parse("a filterdate(v, 20010101, 1 )");
-            fail();
-        } catch(Exception e) {
-            checkException(e, "Unknown operator");
-        }
-
+        assertEquals("SELECT * FROM a t0 WHERE v < '20020101' AND v >= '20010101'", c.parse("a filterdate(v, 20010101, 20020101)"));
     }
 
     @Test

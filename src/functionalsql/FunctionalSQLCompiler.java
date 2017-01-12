@@ -38,8 +38,6 @@ public class FunctionalSQLCompiler {
 
 	public static final String ERR_MISSING_END_QUOTE = "Missing end quote.";
 
-	public static final String ERR_RESTRICTED_KEY_WORD_USE_QUOTES = "Restricted keyword: %s. Use quotes.";
-
 	public static final String ERR_NULL_TABLE = "Null table.";
 
 	public static final String ERR_NULL_FIELD = "Null field.";
@@ -51,8 +49,6 @@ public class FunctionalSQLCompiler {
 	public static final String ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT = "No join columns defined in statement and no custom mapping found.";
 
 	public static final String ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS = "Default mapping has no equal columns.";
-
-	public static final String ERR_UNKNOWN_OPERATOR = "Unknown operator %s.";
 
 	public static final String ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS = "Function has to many arguments.";
 
@@ -200,21 +196,27 @@ public class FunctionalSQLCompiler {
 	 *
 	 * @param column The column to filter.
 	 * @param value The value to filter.
-	 * @param operator Filter operator.
+	 * @param secondValueOrOperator Second value for between clause or operator when only 1 value is provided.
 	 *
 	 * @throws Exception Thrown in case of an error.
 	 */
-	protected void filterDate(String column, String value, String operator) throws Exception {
-		if (!"=".equals(operator) &&
-		        !"<=".equals(operator) &&
-		        !">=".equals(operator) &&
-		        !"<".equals(operator) &&
-		        !">".equals(operator)) {
-			syntaxError(ERR_UNKNOWN_OPERATOR, operator);
-		}
+	protected void filterDate(String column, String value, String secondValueOrOperator) throws Exception {
 
-		getTopStatement().filterClauses.add(String.format("%s %s '%s'", column, operator, value));
-	}
+        if (secondValueOrOperator == null) {
+            secondValueOrOperator = "=";
+        }
+
+        if ("=".equals(secondValueOrOperator) ||
+                "<=".equals(secondValueOrOperator) ||
+                ">=".equals(secondValueOrOperator) ||
+                "<".equals(secondValueOrOperator) ||
+                ">".equals(secondValueOrOperator)) {
+            getTopStatement().filterClauses.add(String.format("%s %s '%s'", column, secondValueOrOperator, value));
+        } else {
+            getTopStatement().filterClauses.add(String.format("%s >= '%s'", column, value));
+            getTopStatement().filterClauses.add(String.format("%s < '%s'", column, secondValueOrOperator));
+        }
+    }
 
 	/**
 	 * Report function (SUM, MIN and MAX).
@@ -1040,38 +1042,38 @@ public class FunctionalSQLCompiler {
 	 *    a filterdate( column, 20120101 , <= )
 	 *    a filterdate( column, 20120101 , '>' )
 	 *    a filterdate( column, 20120101 , '<' )
+	 *    a filterdate( column, 20120101, 20140101 )
 	 *
 	 */
 	private class FilterDate extends Function {
-		private String operator = "=";
+		private String secondValueOrOperator = "=";
 
 		public FilterDate() {
 			argumentsTakesTableOrColumn(1);
 		}
 
-		/* FIND COLUMN.
+		/* Find column.
 		*/
 		protected void processor1(String s) throws Exception {
 			column = s;
 			nextMandatoryStep();
 		}
 
-		/* FIND VALUE.
-		*/
+		/* Find first value. */
 		protected void processor2(String s) throws Exception {
 			value = s;
 			nextStep();
 		}
 
-		/* FIND FILTER OPERATOR IF PROVIDED.
+		/* Find second value (between) or operator if provided.
 		*/
 		protected void processor3(String s) throws Exception {
-			operator = s;
+			secondValueOrOperator = s;
 			finished();
 		}
 
 		public void post() throws Exception {
-			filterDate(column, value, operator);
+			filterDate(column, value, secondValueOrOperator);
 		}
 	}
 
