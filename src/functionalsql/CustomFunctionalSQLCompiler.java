@@ -57,7 +57,7 @@ public class CustomFunctionalSQLCompiler extends FunctionalSQLCompiler {
             List<String> values = new ArrayList<>();
             values.add(value2 != null ? value2 : value1);
 
-            filter(column, values);
+            filter(column, values, false);
         }
     }
 }

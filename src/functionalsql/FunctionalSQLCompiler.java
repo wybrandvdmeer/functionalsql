@@ -10,6 +10,10 @@ import java.util.regex.Pattern;
  */
 public class FunctionalSQLCompiler {
 
+    public static final String ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER = "Need a value to filter on when using operator in filter function.";
+
+    public static final String ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER = "Only one value when using operator in filter function (%s).";
+
     public static final String ERR_UNKNOWN_FUNCTION = "Unknown function (%s).";
 
 	public static final String ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME = "Wrong format table or column name: %s.";
@@ -75,6 +79,7 @@ public class FunctionalSQLCompiler {
 	protected enum JOIN_TYPE {
 		INNER, LEFT, RIGHT, FULL;
 	}
+
 	/**
 	 * Constructor.
 	 */
@@ -351,19 +356,42 @@ public class FunctionalSQLCompiler {
 
 			if (idx < columns.size() - 1) {
 				getTopStatement().clauses[0] += ",";
-			}
+            }
 		}
 	}
 
-	/**
-	 * Filter function.
-	 *
-	 * @param column The column on which to filter.
-	 * @param values The values on which to filter.
-	 */
-	protected void filter(String column, List<String> values) throws Exception {
-		filter(column, values, true);
-	}
+	protected void filter(String column, List<String> values, boolean inclusive) throws Exception {
+        if(values.size() >= 1 && !isQuoted(values.get(0)) &&
+                ( values.get(0).equals("<") ||
+                  values.get(0).equals(">") ||
+                  values.get(0).equals("<=") ||
+                  values.get(0).equals(">=") ||
+                  values.get(0).equals("==") ||
+                  values.get(0).equals("!="))) {
+            filterOnOperator(column, values);
+        } else {
+            filterOnValues(column, values, inclusive);
+        }
+    }
+
+	protected void filterOnOperator(String column, List<String> values) throws Exception {
+
+        String operator = values.remove(0);
+
+        if(values.size() == 0) {
+	        syntaxError(ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER);
+        }
+
+        if(values.size() > 1) {
+            syntaxError(ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER, values);
+        }
+
+        String filterClause = String.format("%s %s %s", column, operator, values.get(0));
+
+        if (!getTopStatement().filterClauses.contains(filterClause)) {
+            getTopStatement().filterClauses.add(filterClause);
+        }
+    }
 
 	/**
 	 * Filter function.
@@ -372,7 +400,7 @@ public class FunctionalSQLCompiler {
 	 * @param values The values on which to filter.
 	 * @param inclusive If filter should be inclusive or exclusive.
 	 */
-	protected void filter(String column, List<String> values, boolean inclusive) throws Exception {
+	protected void filterOnValues(String column, List<String> values, boolean inclusive) throws Exception {
 		/* If list is null or has no values, it is a program error.
 		*/
 		assert (values != null && values.size() > 0);
@@ -1243,7 +1271,13 @@ public class FunctionalSQLCompiler {
 	}
 
 	/**
-	 * Syntax: filter( column , value1 , value2 , ... )
+	 * Syntax:
+     * filter(column, value1, value2, ...)
+     * filter(column, operator, value)
+     *
+     * Note: if you want to filter on for instance '<', you have to put the '<' sign between quotes.
+     *       Thus: filter(column, '<')
+     *       When leaving out the quotes, then it is seen as an operator.
 	 */
 	private class Filter extends Function {
 		private boolean inclusive = true;
@@ -1257,21 +1291,21 @@ public class FunctionalSQLCompiler {
 			this.inclusive = inclusive;
 		}
 
-		/* FIND COLUMN ON WHICH TO FILTER.
+		/* Find column on which to filter.
 		*/
 		protected void processor1(String s) throws Exception {
 			column = s;
 			nextMandatoryStep();
 		}
 
-		/* FIND VALUES ON WHICH TO FILTER.
+		/* Find values/operator on which to filter.
 		*/
 		protected void processor2(String s) throws Exception {
-			values.add(s);
+            values.add(s);
 		}
 
 		public void post() throws Exception {
-			filter(column, values, inclusive);
+            filter(column, values, inclusive);
 		}
 	}
 

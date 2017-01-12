@@ -211,6 +211,27 @@ public class TestFunctionalSQLCompiler {
         } catch(Exception e) {
             checkException(e, "Value (a) should be quoted.");
         }
+
+        assertEquals("SELECT * FROM a t0 WHERE v != 1", c.parse("a filter(v, !=, 1)"));
+        assertEquals("SELECT * FROM a t0 WHERE v == 1", c.parse("a filter(v, ==, 1)"));
+        assertEquals("SELECT * FROM a t0 WHERE v < 1", c.parse("a filter(v, <, 1)"));
+        assertEquals("SELECT * FROM a t0 WHERE v > 1", c.parse("a filter(v, >, 1)"));
+        assertEquals("SELECT * FROM a t0 WHERE v <= 1", c.parse("a filter(v, <=, 1)"));
+        assertEquals("SELECT * FROM a t0 WHERE v >= 1", c.parse("a filter(v, >=, 1)"));
+        assertEquals("SELECT * FROM a t0 WHERE v = '<'", c.parse("a filter(v, '<')"));
+
+        try {
+            c.parse("a filter(v,!=)");
+            fail();
+        } catch(Exception e) {
+            checkException(e, FunctionalSQLCompiler.ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER);
+        }
+
+        try {
+            c.parse("a filter(v,!=, 'a', 'b')");
+        } catch(Exception e) {
+            checkException(e, "Only one value when using operator in filter function (['a', 'b']).");
+        }
     }
 
     @Test
