@@ -216,11 +216,11 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testFilterDate() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        assertEquals("SELECT * FROM a t0 WHERE v = convert( datetime , '20010101' )", c.parse("a filterdate(v, 20010101)"));
-        assertEquals("SELECT * FROM a t0 WHERE v >= convert( datetime , '20010101' )", c.parse("a filterdate(v, 20010101, >= )"));
-        assertEquals("SELECT * FROM a t0 WHERE v <= convert( datetime , '20010101' )", c.parse("a filterdate(v, 20010101, <= )"));
-        assertEquals("SELECT * FROM a t0 WHERE v > convert( datetime , '20010101' )", c.parse("a filterdate(v, 20010101, > )"));
-        assertEquals("SELECT * FROM a t0 WHERE v < convert( datetime , '20010101' )", c.parse("a filterdate(v, 20010101, < )"));
+        assertEquals("SELECT * FROM a t0 WHERE v = '20010101'", c.parse("a filterdate(v, 20010101)"));
+        assertEquals("SELECT * FROM a t0 WHERE v >= '20010101'", c.parse("a filterdate(v, 20010101, >= )"));
+        assertEquals("SELECT * FROM a t0 WHERE v <= '20010101'", c.parse("a filterdate(v, 20010101, <= )"));
+        assertEquals("SELECT * FROM a t0 WHERE v > '20010101'", c.parse("a filterdate(v, 20010101, > )"));
+        assertEquals("SELECT * FROM a t0 WHERE v < '20010101'", c.parse("a filterdate(v, 20010101, < )"));
 
         try {
             c.parse("a filterdate(v, 20010101, 1 )");

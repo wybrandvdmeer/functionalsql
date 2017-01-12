@@ -213,7 +213,7 @@ public class FunctionalSQLCompiler {
 			syntaxError(ERR_UNKNOWN_OPERATOR, operator);
 		}
 
-		getTopStatement().filterClauses.add(String.format("%s %s convert( datetime , '%s' )", column, operator, value));
+		getTopStatement().filterClauses.add(String.format("%s %s '%s'", column, operator, value));
 	}
 
 	/**
