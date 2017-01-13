@@ -70,15 +70,9 @@ public class FunctionalSQLCompiler {
 	private String originalStatement;
 	private int popCounter = 0;
 
-	private FunctionalSQLCompiler compiler;
+	private final static Pattern TABLE_COLUMN_FORMAT=Pattern.compile("[a-zA-Z0-9_]*");
 
-	private final Pattern TABLE_COLUMN_FORMAT=Pattern.compile("[a-zA-Z0-9_]*");
-
-	private final Pattern NUMMERIC_FORMAT=Pattern.compile("[-]*[0-9.]*");
-
-	protected enum JOIN_TYPE {
-		INNER, LEFT, RIGHT, FULL;
-	}
+	private final static Pattern NUMMERIC_FORMAT=Pattern.compile("[-]*[0-9.]*");
 
 	/**
 	 * Constructor.
@@ -98,13 +92,18 @@ public class FunctionalSQLCompiler {
 		functions.put("sum", Sum.class);
 		functions.put("(", Statement.class);
 		functions.put("distinct", Distinct.class);
-		functions.put("distinct-constant", DistinctConstant.class);
 		functions.put("min", Min.class);
 		functions.put("max", Max.class);
 		functions.put("filter", Filter.class);
 		functions.put("filterdate", FilterDate.class);
 		functions.put("notfilter", NotFilter.class);
+        functions.put("newtable", NewTable.class);
+        functions.put("ref", Ref.class);
 	}
+
+	public Class<? extends Function> getFunction(String function) {
+	    return functions.get(function);
+    }
 
 	public void renameFunction(String existingFunction, String newFunction) throws Exception {
         Class<? extends Function> function = functions.get(existingFunction);
@@ -173,7 +172,6 @@ public class FunctionalSQLCompiler {
 		printSQL = false;
 		originalStatement = statement;
 		textElements = new ArrayList<>();
-		compiler = this;
 
 		/* Chop statement into language elements. The ')' token is put at the end of the statement, because a statement should
 		always be closed by a closing bracket. The opening bracket is implicitly added by executing the statement method.
@@ -183,271 +181,157 @@ public class FunctionalSQLCompiler {
 		}
 
 		Statement s = new Statement();
-		s.execute();
+		parse(s);
 
 		if (printSQL) {
-			throw new Exception(s.sql);
+			throw new Exception(s.getSql());
 		}
 
-		return s.sql;
+		return s.getSql();
 	}
+
+	void parse(Statement statement) throws Exception {
+
+        /* Administrate this statement to the list of statements which functions as a stack.
+		*/
+		statements.add(statement);
+
+		String token = null;
+
+		/* Token can be either a '(' (which is a new statement), a ')' (which is the end of the statement) or the drive-table.
+		*/
+		while (textElements.size() > 0) {
+			token = textElements.get(0);
+			textElements.remove(0);
+
+			if (functions.containsKey(token)) {
+				Class<? extends Function> function = functions.get(token);
+
+				if (function == null) {
+					printSQL = true; /* PrintSQL can popup anytime. */
+				} else {
+					Function instance = exec(statement, function, getDriveTableOfQuery());
+
+					if (instance instanceof Statement) {
+						String nestedQuery = ((Statement) instance).getSql();
+
+						if(statement.isFullSelect()) {
+							statement.copyStatement(((Statement)instance));
+						} else {
+							statement.fromClauses.add(String.format("(%s) %s", nestedQuery, statement.getAlias(nestedQuery)));
+						}
+					}
+				}
+			} else {
+				/* If token is not a function, then it can either be a ')' which is the end of the function or the drive-table.
+				Note: The openings bracket '(' is a member of the function map.
+				*/
+				if (")".equals(token)) {
+					break;
+				}
+
+                /* Get the drive table of the query.
+				*/
+				if (statement.getTable() == null) {
+					statement.setTable(token);
+
+                    /* Put drive table in the FROM clause.
+					NOTE: statement below must be placed here and not in compileSQL(). WHY IS THIS???????????????????
+					*/
+					statement.fromClauses.add(String.format("%s %s", statement.getTable(), statement.getAlias(statement.getTable())));
+				} else {
+					syntaxError(ERR_UNKNOWN_FUNCTION, token);
+				}
+			}
+		}
+
+		if (!")".equals(token)) {
+			syntaxError(ERR_UNEXPECTED_END_OF_STATEMENT);
+		}
+
+		statement.compileSQL();
+
+		/* Remove statement from the stack.
+		*/
+		statements.remove(this);
+	}
+
+    void parse(Function function) throws Exception {
+
+        /* Function should always begin with an opening bracket.
+		*/
+        if (!"(".equals(pop())) {
+            syntaxError(ERR_EXP_OPENING_BRACKET);
+        }
+
+        String languageElement=null;
+
+        while (!function.isFinished()) {
+
+            languageElement = pop();
+
+            if("'".equals(languageElement)) {
+                languageElement = "'" + pop() + "'";
+
+                if(!"'".equals(pop())) {
+                    syntaxError(ERR_MISSING_END_QUOTE);
+                }
+            }
+
+            /* If argument is denoted as a table/column argument, do some table/column processing.
+            The processing consists of 2 things:
+            1>
+              Process the ref function. The ref function can be used to refer tables who have multiple instances in the from clause.
+              For instance SELECT t2.field FROM a t0 , b t1 , a t2 WHERE ... In this case the t2.field in the SELECT clause is denoted as
+              print( ref( a , 2 ) ). The trick is now to resolve the correct alias (t1).
+              This functions opposite equivalent is newtable() which is used to add an other instance of the same table to the query.
+            2>
+              Columns can be noted as table.column.
+            */
+            if (function.isColumn(function.getStep())) {
+                Class<? extends Function> functionClass = getFunction(languageElement);
+
+                if(function != null && Ref.class == functionClass) {
+                    Function ref = exec(getTopStatement(), functionClass, null);
+                    languageElement = ((Ref)ref).getReference();
+                } else {
+                    languageElement = resolveColumn(languageElement);
+                }
+            }
+
+            if(function.getStep() == 1 && ")".equals(languageElement)) {
+                syntaxError(ERR_FUNCTION_HAS_NO_ARGUMENTS);
+            }
+
+            function.process(languageElement);
+
+            /* Argument is processed. Process now the element which follows the argument. This element can be a ',' in case the function continues
+			or a ')' in case the function closes.
+			*/
+            languageElement = pop();
+
+            if(")".equals(languageElement)) {
+                if(function.expectAnotherArgument()) {
+                    syntaxError(UNEXPECTED_END_OF_FUNCTION);
+                }
+                break;
+            } else {
+                if(!",".equals(languageElement)) {
+                    syntaxError(ERR_EXP_COMMA, languageElement);
+                }
+            }
+        }
+
+        if(!")".equals(languageElement)) {
+            syntaxError(ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
+        }
+    }
 
 	private boolean isNull(String s) {
 		return s == null || s.length() == 0;
 	}
 
-	/**
-	 * FilterDate function.
-	 *
-	 * @param column The column to filter.
-	 * @param value The value to filter.
-	 * @param secondValueOrOperator Second value for between clause or operator when only 1 value is provided.
-	 *
-	 * @throws Exception Thrown in case of an error.
-	 */
-	protected void filterDate(String column, String value, String secondValueOrOperator) throws Exception {
-
-        if (secondValueOrOperator == null) {
-            secondValueOrOperator = "=";
-        }
-
-        if ("=".equals(secondValueOrOperator) ||
-                "<=".equals(secondValueOrOperator) ||
-                ">=".equals(secondValueOrOperator) ||
-                "<".equals(secondValueOrOperator) ||
-                ">".equals(secondValueOrOperator)) {
-            getTopStatement().filterClauses.add(String.format("%s %s '%s'", column, secondValueOrOperator, value));
-        } else {
-            getTopStatement().filterClauses.add(String.format("%s >= '%s'", column, value));
-            getTopStatement().filterClauses.add(String.format("%s < '%s'", column, secondValueOrOperator));
-        }
-    }
-
-	/**
-	 * Report function (SUM, MIN and MAX).
-	 *
-	 * @param reportFunction The report function.
-	 * @param summationArgument Argument for the report function..
-	 * @param columns Columns on which to report.
-	 *
-	 * @throws Exception Thrown in case of an error.
-	 */
-	protected void report(String reportFunction, String summationArgument, List<String> columns) throws Exception {
-		if (getTopStatement().clauses[0] != null) {
-			syntaxError(ERR_SELECT_ALREADY_DEFINED, getTopStatement().clauses[0]);
-		}
-
-		/* If anything else, then it is a program error.
-		*/
-		assert ("SUM".equals(reportFunction) || "MAX".equals(reportFunction) || "MIN".equals(reportFunction));
-
-		getTopStatement().clauses[0] = "SELECT";
-
-		if (columns.size() > 0) {
-			getTopStatement().clauses[2] = "GROUP BY";
-		}
-
-		/* Expand the select and group clause.
-		*/
-		for (int idx = 0; idx < columns.size(); idx++) {
-			getTopStatement().clauses[0] += " " + columns.get(idx);
-			getTopStatement().clauses[2] += " " + columns.get(idx);
-
-			if (idx < columns.size() - 1) {
-				getTopStatement().clauses[0] += ",";
-				getTopStatement().clauses[2] += ",";
-			}
-		}
-
-		/* Add the summation function to the select clause.
-		*/
-		getTopStatement().clauses[0] += String.format("%s %s( %s )", columns.size() > 0 ? "," : "", reportFunction,
-		                                              summationArgument);
-	}
-
-	/**
-	 * Order function.
-	 * @param asc True if order is ascending. Otherwise false.
-	 * @param columns The columns on which to order.
-	 */
-	protected void order(boolean asc, List<String> columns) {
-		if (getTopStatement().clauses[1] == null) {
-			getTopStatement().clauses[1] = "ORDER BY";
-		}
-
-		/* Expand the order by clause.
-		*/
-		for (int idx = 0; idx < columns.size(); idx++) {
-			getTopStatement().clauses[1] += " " + columns.get(idx);
-
-			if (idx < columns.size() - 1) {
-				getTopStatement().clauses[1] += ",";
-			}
-		}
-
-		getTopStatement().clauses[1] += asc ? " ASC" : " DESC";
-	}
-
-	/**
-	 * Group function.
-	 *
-	 * @param columns The columns on which to order.
-	 *
-	 * @throws Exception Thrown in case of an error.
-	 */
-	protected void group(List<String> columns) throws Exception {
-		if (getTopStatement().clauses[0] != null) {
-			syntaxError(ERR_SELECT_ALREADY_DEFINED, getTopStatement().clauses[0]);
-		}
-
-		getTopStatement().clauses[0] = "SELECT";
-		getTopStatement().clauses[2] = "GROUP BY";
-
-		/* Expand the select and group clause.
-		*/
-		for (int idx = 0; idx < columns.size(); idx++) {
-			getTopStatement().clauses[0] += " " + columns.get(idx);
-			getTopStatement().clauses[2] += " " + columns.get(idx);
-
-			if (idx < columns.size() - 1) {
-				getTopStatement().clauses[0] += ",";
-				getTopStatement().clauses[2] += ",";
-			}
-		}
-	}
-
-	/**
-	 * Function creates distinct clause.
-	 * @param constants The constants.
-	 * @throws Exception Thrown in case of an error.
-	 */
-	protected void distinctConstants(List<String> constants) throws Exception {
-		List<String> quotedConstants = new ArrayList<>();
-
-		constants.stream().forEach(c -> quotedConstants.add("'" + c + "'"));
-
-		distinct(quotedConstants);
-	}
-
-	/**
-	 * Function creates a distinct select clause.
-	 * @param columns The columns.
-	 * @throws Exception Thrown in case of an error.
-	 */
-	protected void distinct(List<String> columns) throws Exception {
-		if (columns.size() == 0) {
-			return;
-		}
-
-		if (getTopStatement().clauses[0] != null) {
-			if (!getTopStatement().clauses[0].startsWith("SELECT DISTINCT")) {
-				syntaxError(ERR_SELECT_ALREADY_DEFINED, getTopStatement().clauses[0]);
-			}
-
-			getTopStatement().clauses[0] += ",";
-		} else {
-			getTopStatement().clauses[0] = "SELECT DISTINCT";
-		}
-
-		/* Expand the select clause.
-		*/
-		for (int idx = 0; idx < columns.size(); idx++) {
-			getTopStatement().clauses[0] += " " + columns.get(idx);
-
-			if (idx < columns.size() - 1) {
-				getTopStatement().clauses[0] += ",";
-            }
-		}
-	}
-
-	protected void filter(String column, List<String> values, boolean inclusive) throws Exception {
-        if(values.size() >= 1 && !isQuoted(values.get(0)) &&
-                ( values.get(0).equals("<") ||
-                  values.get(0).equals(">") ||
-                  values.get(0).equals("<=") ||
-                  values.get(0).equals(">=") ||
-                  values.get(0).equals("==") ||
-                  values.get(0).equals("!="))) {
-            filterOnOperator(column, values);
-        } else {
-            filterOnValues(column, values, inclusive);
-        }
-    }
-
-	protected void filterOnOperator(String column, List<String> values) throws Exception {
-
-        String operator = values.remove(0);
-
-        if(values.size() == 0) {
-	        syntaxError(ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER);
-        }
-
-        if(values.size() > 1) {
-            syntaxError(ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER, values);
-        }
-
-        String filterClause = String.format("%s %s %s", column, operator, values.get(0));
-
-        if (!getTopStatement().filterClauses.contains(filterClause)) {
-            getTopStatement().filterClauses.add(filterClause);
-        }
-    }
-
-	/**
-	 * Filter function.
-	 *
-	 * @param column The column on which to filter.
-	 * @param values The values on which to filter.
-	 * @param inclusive If filter should be inclusive or exclusive.
-	 */
-	protected void filterOnValues(String column, List<String> values, boolean inclusive) throws Exception {
-		/* If list is null or has no values, it is a program error.
-		*/
-		assert (values != null && values.size() > 0);
-
-		for(String value : values) {
-			if(!isNummeric(value) && !isQuoted(value)) {
-				syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
-			}
-		}
-
-		String filterClause;
-
-		/* Expand the where clause
-		*/
-		if (values.size() == 0) {
-			filterClause = String.format("%s %s NULL", column, inclusive ? "IS" : "IS NOT");
-		} else if (values.size() == 1) {
-			filterClause = String.format("%s %s %s",
-			                             column,
-			                             inclusive ? "=" : "!=",
-			                             values.get(0));
-		} else {
-			String argumentListINFunction = inclusive ? " IN (" : " NOT IN (";
-
-			for (int idx = 0; idx < values.size(); idx++) {
-				argumentListINFunction += String.format(" %s", values.get(idx));
-
-				if (idx < values.size() - 1) {
-					argumentListINFunction += ",";
-				}
-			}
-
-			argumentListINFunction += " )";
-
-			filterClause = String.format("%s%s", column, argumentListINFunction);
-		}
-
-		if (!getTopStatement().filterClauses.contains(filterClause)) {
-			getTopStatement().filterClauses.add(filterClause);
-		}
-	}
-
-	private boolean isQuoted(String value) {
-		return value.getBytes()[0] == '\''; // End quote is checked by the Function class.
-	}
-
-	private CustomMapping getCustomMapping(String table1, String column1, String table2) {
+	public CustomMapping getCustomMapping(String table1, String column1, String table2) {
 		CustomMapping defaultMapping = null;
 
 		for (CustomMapping c : customMappings) {
@@ -495,87 +379,13 @@ public class FunctionalSQLCompiler {
 		return null;
 	}
 
-	/**
-	 * Method throws an error as exception.
-	 *
-	 * @param format Format.
-	 * @param args Arguments.
-	 *
-	 * @throws Exception The error.
-	 */
-	protected void syntaxError(String format, Object... args) throws Exception {
+	public static void syntaxError(String format, Object... args) throws Exception {
 		String error = String.format(format, args);
-
-		String indicator = "", arrowLine = "";
-
-		for (int idx = 0; idx < popCounter - 1; idx++) {
-			indicator += " ";
-			arrowLine += "-";
-		}
-
-		indicator += "|";
-		arrowLine += "-";
-
-		throw new Exception(String.format("Syntax error: %s\n%s\n%s\n%s",
-		                                  error,
-		                                  originalStatement,
-		                                  indicator,
-		                                  arrowLine));
-	}
-
-	/**
-	 * Method gets the alias of a table.
-	 *
-	 * @param table The table for which the alias is requested.
-	 *
-	 * @return Alias.
-	 *
-	 */
-	protected String getAlias(String table) throws Exception {
-		return getAlias(table, false);
+		throw new Exception(String.format("Syntax error: %s\n", error));
 	}
 
 	private Statement getTopStatement() {
 		return statements.get(statements.size() - 1);
-	}
-
-	/**
-	 * Method gets the alias of a table.
-	 *
-	 * @param table The table for which the alias is requested.
-	 * @param forceNewAlias If true a new alias is created, no matter if the table is already in the alias administration.
-	 *
-	 * @return Alias.
-	 *
-	 * @throws Exception In case of an error.
-	 */
-	protected String getAlias(String table, boolean forceNewAlias) throws Exception {
-		if (table == null) {
-			syntaxError(ERR_NULL_TABLE);
-		}
-
-		String alias = null;
-
-		if (!forceNewAlias) {
-			for (Entry<String, String> entry : getTopStatement().aliases.entrySet()) {
-				if (entry.getValue().equals(table)) {
-					if (alias != null) {
-						syntaxError(ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION, table);
-					}
-
-					alias = entry.getKey();
-				}
-			}
-
-			if (alias != null) {
-				return alias;
-			}
-		}
-
-		alias = "t" + getTopStatement().aliases.keySet().size();
-
-		getTopStatement().aliases.put(alias, table);
-		return alias;
 	}
 
 	/**
@@ -595,238 +405,17 @@ public class FunctionalSQLCompiler {
 		return null;
 	}
 
-	/**
-	 * Function can be used by macros who want create their own joins.
-	 *
-	 * @param driveTable The drive table.
-	 * @param joinColumnDriveTable Join column drive table.
-	 * @param joinTable The join table.
-	 * @param joinColumnJoinTable Join column join table.
-	 * @param joinType join-type.
-	 */
-	protected void join(String driveTable,
-	                    String aliasDriveTable,
-	                    String joinColumnDriveTable,
-	                    String joinTable,
-	                    String aliasJoinTable,
-	                    String joinColumnJoinTable,
-						JOIN_TYPE joinType) throws Exception {
-
-		String fromClause = String.format("%s %s", joinTable, aliasJoinTable);
-
-		/* Expand the from clause with the join table if necessary.
-		*/
-		if(joinType == null && !getTopStatement().fromClauses.contains(fromClause)) {
-			getTopStatement().fromClauses.add(fromClause);
-		}
-
-		/* Syntax:
-		join( table )
-		join( table, driveTableColumn )
-		join( table, driveTableColumn , joinTableColumn )
-
-		RULE: If joinTableColumn is present, then also driveTableColumn is present.
-		*/
-		if (joinColumnJoinTable == null) {
-			CustomMapping c = getCustomMapping(driveTable, joinColumnDriveTable, joinTable);
-
-			/* If join fields are not programmed and there are also no cumstom mappings, then we cannot define the join.
-			*/
-			if (c == null) {
-				syntaxError(ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT);
-			}
-
-			joinColumnJoinTable = c.getColumn(joinTable);
-
-			/* If joinFieldJoinTable should be null at this point, it is a program error.
-			*/
-			assert (joinColumnJoinTable != null);
-
-			if (joinColumnDriveTable == null) {
-				joinColumnDriveTable = c.getColumn(driveTable);
-			}
-
-			/* If joinFieldDriveTable should be null at this point, it is a program error.
-			*/
-			assert (joinColumnDriveTable != null);
-		}
-
-		/* Expand the where clause if necessary.
-		*/
-		String clause;
-
-		if (aliasToNumber(aliasDriveTable) < aliasToNumber(aliasJoinTable)) {
-			clause = String.format("%s.%s = %s.%s",
-			                            aliasDriveTable,
-			                            joinColumnDriveTable,
-			                            aliasJoinTable,
-			                            joinColumnJoinTable);
-		} else {
-			clause = String.format("%s.%s = %s.%s",
-			                            aliasJoinTable,
-			                            joinColumnJoinTable,
-			                            aliasDriveTable,
-			                            joinColumnDriveTable);
-		}
-
-		/* The inner join is depicted as SELECT ... FROM a, b WHERE ... (instead of using the JOIN keyword).
-		*/
-		if(joinType == null) {
-			if (!getTopStatement().filterClauses.contains(clause)) {
-				getTopStatement().filterClauses.add(clause);
-			}
-		} else {
-			String joinClause=null;
-
-			switch (joinType) {
-                case INNER:
-                    joinClause = String.format("INNER JOIN %s ON %s", fromClause, clause);
-                    break;
-
-				case LEFT:
-					joinClause = String.format("LEFT JOIN %s ON %s", fromClause, clause);
-					break;
-
-				case RIGHT:
-					joinClause = String.format("RIGHT JOIN %s ON %s", fromClause, clause);
-					break;
-
-				case FULL:
-					joinClause = String.format("FULL JOIN %s ON %s", fromClause, clause);
-					break;
-			}
-
-			if (!getTopStatement().joinClauses.contains(joinClause)) {
-				getTopStatement().joinClauses.add(joinClause);
-			}
-		}
-	}
-
-	private int aliasToNumber(String alias) {
+	static int aliasToNumber(String alias) {
 		return Integer.parseInt(alias.substring(1));
 	}
 
-	/**
-	 * @see java.lang.String#toString()
-	 */
 	public String toString() {
 		return originalStatement;
 	}
 
-	/**
-	 * Print function.
-	 *
-	 * @param columns The columns which to print.
-	 * @throws Exception Thrown in case of an exception.
-	 */
-	protected void print(List<String> columns) throws Exception {
-		if (getTopStatement().clauses[0] != null) {
-			syntaxError(ERR_SELECT_ALREADY_DEFINED, getTopStatement().clauses[0]);
-		}
-
-		getTopStatement().clauses[0] = "SELECT";
-
-		/* Expand the select clause.
-		*/
-		for (int idx = 0; idx < columns.size(); idx++) {
-			String column = columns.get(idx);
-
-			/* Check if argument is a table. If so, all fields of table are selected.
-			Argument can also be a reference when the table was referred with the ref( table, occ ) function.
-			*/
-			if (isTable(column)) {
-				column = getAlias(column) + ".*";
-			} else if (isAlias(column)) {
-				column = column + ".*";
-			}
-
-			getTopStatement().clauses[0] += " " + column;
-
-			if (idx < columns.size() - 1) {
-				getTopStatement().clauses[0] += ",";
-			}
-		}
-	}
-
-	/**
-	 * Like function.
-	 *
-	 * @param column The column for the like filter.
-	 * @param value The value for the like filter.
-	 * @throws Exception Thrown in case of an error.
-	 */
-	protected void like(String column, String value) throws Exception {
-		if(!isNummeric(value) && !isQuoted(value)) {
-			syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
-		}
-
-		getTopStatement().filterClauses.add(String.format("%s LIKE %s", column, value));
-	}
-
-	/**
-	 * Method tries to find the alias for the table.
-	 * @param tableColumn Table and an optional column.
-	 * @param reference The nummerical reference (1..n).
-	 * @return If found the alias. Otherwise an exception is thrown.
-	 * @throws Exception In case of an error or alias is not found.
-	 */
-	protected String ref(String tableColumn, String reference) throws Exception {
-		String[] tableAndColumn = splitTableColumn(tableColumn);
-
-		/* If ref is programmed, the referenced table should already be processed.
-		 */
-		if (!isTable(tableAndColumn[0])) {
-			syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, tableAndColumn[0]);
-		}
-
-		if (!isNummeric(reference)) {
-			syntaxError(ERR_TABLE_REFERENCE_SHOULD_BE_NUMMERICAL, reference);
-		}
-
-		if (Integer.parseInt(reference) < 1) {
-			syntaxError(ERR_TABLE_REFERENCE_SHOULD_BE_EQUAL_OR_GREATER_THEN_ONE, reference);
-		}
-
-		int idx = 0;
-		String alias = null;
-
-		for (Entry<String, String> entry : getTopStatement().aliases.entrySet()) {
-
-			if (!tableAndColumn[0].equals(entry.getValue())) {
-				continue;
-			}
-
-			if (idx == Integer.parseInt(reference) - 1) {
-				alias = entry.getKey();
-			}
-
-			idx++;
-		}
-
-		if (alias == null) {
-			syntaxError(ERR_TABLE_REFERENCE_IS_NOT_CORRECT, reference);
-		}
-
-		return alias + (tableAndColumn.length > 1 ? ("." + tableAndColumn[1]) : ""); // E.g. t0 or t0.column
-	}
-
-	/**
-	 * Method determines if string is a table.
-	 * @param s The string.
-	 * @return True is string is table. Otherwise false.
-	 */
-	protected boolean isTable(String s) {
-		return getTopStatement().aliases.values().contains(s);
-	}
-
-	/**
-	 * Method determines if string is alias.
-	 * @param s The string.
-	 * @return True if string is alias. Otherwise false.
-	 */
-	protected boolean isAlias(String s) {
-		return getTopStatement().aliases.keySet().contains(s);
-	}
+    static boolean isQuoted(String value) {
+        return value.getBytes()[0] == '\''; // End quote is checked by the Function class.
+    }
 
 	/**
 	 * Method splits table.column format in table and/or column.
@@ -870,1016 +459,142 @@ public class FunctionalSQLCompiler {
 			return value;
 		}
 
-		return getAlias(tableAndColumn[0]) + "." + tableAndColumn[1];
+		return getTopStatement().getAlias(tableAndColumn[0]) + "." + tableAndColumn[1];
 	}
 
-	private void checkTableOrColumnFormat(String s) throws Exception {
+	static void checkTableOrColumnFormat(String s) throws Exception {
 		if(s != null && !isTableOrColumnName(s)) {
 			syntaxError(ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME, s);
 		}
 	}
 
-	protected boolean isTableOrColumnName(String value) {
+	static boolean isTableOrColumnName(String value) {
 		return TABLE_COLUMN_FORMAT.matcher(value).matches();
 	}
 
-	/**
-	 * Method determines if string is a nummerical.
-	 * @param s The string.
-	 * @return True is string is nummerical. Otherwise false.
-	 */
-	protected boolean isNummeric(String s) {
+	static boolean isNummeric(String s) {
 		return NUMMERIC_FORMAT.matcher(s).matches();
 	}
 
-    private Function exec(Class<? extends Function> function, String driveTable) throws Exception {
+    Function exec(Statement statement, Class<? extends Function> function, String driveTable) throws Exception {
 		/* If you want to instantiate an inner class, you have to search for the constructor which takes the super class as
 		an argument.
 		*/
-        Constructor<? extends Function> cons = function.getDeclaredConstructor(function.getEnclosingClass());
-        Function instance = cons.newInstance(new Object[] { compiler });
+        Constructor<? extends Function> cons = function.getDeclaredConstructor();
+        Function instance = cons.newInstance();
+
+        instance.setCompiler(this);
+        instance.setStatement(statement);
 
         if (instance instanceof Join) {
-            ((Join) instance).setDriveTable(driveTable, getAlias(driveTable));
+            ((Join) instance).setDriveTable(driveTable, statement.getAlias(driveTable));
         }
 
-        instance.execute();
+        if(instance instanceof Statement) {
+            parse((Statement)instance);
+        } else {
+            parse(instance);
+            instance.execute();
+        }
 
         return instance;
     }
-
-    /* Strange: Statement has to be not private, otherwise exec cannot call Statement.
-    */
-	protected class Statement extends Function {
-		public String[] clauses = new String[3]; // Contains SELECT, FROM, ORDER AND GROUP.
-		public List<String> fromClauses = new ArrayList<String>();
-		public List<String> joinClauses = new ArrayList<String>();
-		public List<String> filterClauses = new ArrayList<String>();
-		public Map<String, String> aliases = new HashMap<String, String>(); //alias, table
-
-		private String sql;
-
-		protected void parse() throws Exception {
-			/* Administrate this statement to the list of statements which functions as a stack.
-			*/
-			statements.add(this);
-
-			String token = null;
-
-			/* Token can be either a '(' (which is a new statement), a ')' (which is the end of the statement) or the drive-table.
-			*/
-			while (textElements.size() > 0) {
-				token = textElements.get(0);
-				textElements.remove(0);
-
-				if (functions.containsKey(token)) {
-					Class<? extends Function> function = functions.get(token);
-
-					if (function == null) {
-						printSQL = true; /* PrintSQL can popup anytime. */
-					} else {
-						Function instance = exec(function, getDriveTableOfQuery());
-
-						if (instance instanceof Statement) {
-							String nestedQuery = ((Statement) instance).sql;
-
-							if(isFullSelect()) {
-                                copyStatement(((Statement)instance));
-							} else {
-								fromClauses.add(String.format("(%s) %s", nestedQuery, getAlias(nestedQuery)));
-							}
-						}
-					}
-				} else {
-					/* If token is not a function, then it can either be a ')' which is the end of the function or the drive-table.
-					Note: The openings bracket '(' is a member of the function map.
-					*/
-					if (")".equals(token)) {
-						break;
-					}
-
-					/* Get the drive table of the query.
-					*/
-					if (table == null) {
-						table = token;
-
-						/* Put drive table in the FROM clause.
-						NOTE: statement below must be placed here and not in compileSQL(). WHY IS THIS???????????????????
-						*/
-						fromClauses.add(String.format("%s %s", table, getAlias(table)));
-					} else {
-						syntaxError(ERR_UNKNOWN_FUNCTION, token);
-					}
-				}
-			}
-
-			if (!")".equals(token)) {
-				syntaxError(ERR_UNEXPECTED_END_OF_STATEMENT);
-			}
-
-			sql = compileSQL();
-
-			/* Remove statement from the stack.
-			*/
-			statements.remove(this);
-		}
-
-		private String compileSQL() throws Exception {
-			if (clauses[0] == null) {
-				clauses[0] = "SELECT *";
-			}
-
-			String sql = String.format("%s ", clauses[0]); // SELECT ...
-
-			Collections.sort(fromClauses, (s1, s2) -> s1.toCharArray()[s1.toCharArray().length - 1] - s2.toCharArray()[s2.toCharArray().length - 1]);
-
-			for (int idx = 0; idx < fromClauses.size(); idx++) {
-				if (idx == 0) {
-					sql += ("FROM " + fromClauses.get(idx));
-				} else {
-					sql += (" " + fromClauses.get(idx));
-				}
-
-				if (idx < fromClauses.size() - 1) {
-					sql += ",";
-				}
-			}
-
-			Collections.sort(joinClauses);
-
-			for(String clause : joinClauses) {
-				sql += ( " " + clause);
-			}
-
-			Collections.sort(filterClauses);
-
-			boolean where=true;
-
-			for (String clause : filterClauses) {
-				if (where) {
-					sql += String.format(" WHERE %s", clause);
-					where = false;
-				} else {
-					sql += String.format(" AND %s", clause);
-				}
-			}
-
-			/* GROUP BY clause.
-			*/
-			if (clauses[2] != null) {
-				sql += (" " + clauses[2]);
-			}
-
-			/* ORDER clause.
-			 */
-			if (clauses[1] != null) {
-				sql += (" " + clauses[1]);
-			}
-
-			return sql;
-		}
-
-		protected void post() throws Exception {
-		}
-
-		public String toString() {
-			return sql;
-		}
-
-		private boolean isFullSelect() {
-			return joinClauses.size() == 0 && filterClauses.size() == 0;
-		}
-
-		private void copyStatement(Statement statement) {
-		    this.clauses[0] = statement.clauses[0];
-            this.clauses[1] = statement.clauses[1];
-            this.clauses[2] = statement.clauses[2];
-
-            this.aliases.putAll(statement.aliases);
-            this.fromClauses.addAll(statement.fromClauses);
-            this.joinClauses.addAll(statement.joinClauses);
-            this.filterClauses.addAll(statement.filterClauses);
-        }
-	}
-
-	/**
-	 * Syntax:
-	 *
-	 *    a filterdate( column, 20120101 )
-	 *    a filterdate( column, 20120101 , >= )
-	 *    a filterdate( column, 20120101 , <= )
-	 *    a filterdate( column, 20120101 , '>' )
-	 *    a filterdate( column, 20120101 , '<' )
-	 *    a filterdate( column, 20120101, 20140101 )
-	 *
-	 */
-	private class FilterDate extends Function {
-		private String secondValueOrOperator = "=";
-
-		public FilterDate() {
-			argumentsTakesTableOrColumn(1);
-		}
-
-		/* Find column.
-		*/
-		protected void processor1(String s) throws Exception {
-			column = s;
-			nextMandatoryStep();
-		}
-
-		/* Find first value. */
-		protected void processor2(String s) throws Exception {
-			value = s;
-			nextStep();
-		}
-
-		/* Find second value (between) or operator if provided.
-		*/
-		protected void processor3(String s) throws Exception {
-			secondValueOrOperator = s;
-			finished();
-		}
-
-		public void post() throws Exception {
-			filterDate(column, value, secondValueOrOperator);
-		}
-	}
-
-	private class Sum extends Report {
-		public Sum() {
-			super("SUM");
-		}
-	}
-
-	private class Min extends Report {
-		public Min() {
-			super("MIN");
-		}
-	}
-
-	private class Max extends Report {
-		public Max() {
-			super("MAX");
-		}
-	}
-
-	/**
-	 * Syntax: (sum|max|min)( summation_column | nummerical_constant , field1 , table.field2 , ... )
-	 *
-	 */
-	private class Report extends Function {
-		private final String function;
-
-		private String summationArgument = null;
-
-		public Report(String function) {
-			this.function = function;
-
-			argumentsTakesTableOrColumn(1);
-			argumentsTakesTableOrColumn(2);
-		}
-
-		/* FIND REPORT COLUMN/NUMMERICAL CONSTANT.
-		*/
-		protected void processor1(String s) throws Exception {
-			summationArgument = s;
-
-			nextStep(); // User programmed group by columns for intstance sum( 1 , field1 , field2 ).
-		}
-
-		/* FIND THE COLUMN(S) FOR THE GROUP BY.
-		*/
-		protected void processor2(String s) throws Exception {
-			columns.add(s);
-		}
-
-		public void post() throws Exception {
-			report(function, summationArgument, columns);
-		}
-	}
-
-	/**
-	 * Syntax: desc( fielda, table.fieldb , ... )
-	 *
-	 */
-	private class Desc extends Order {
-		public Desc() {
-			setDesc();
-		}
-	}
-
-	/**
-	 * Syntax: asc( fielda, table.fieldb , ... )
-	 *
-	 */
-	private class Order extends Function {
-		private boolean asc = true;
-
-		public Order() {
-			argumentsTakesTableOrColumn(1);
-		}
-
-		protected void setDesc() {
-			asc = false;
-		}
-
-		/* FIND COLUMN(S) FOR THE ORDER BY.
-		*/
-		protected void processor1(String s) throws Exception {
-			columns.add(s);
-		}
-
-		public void post() throws Exception {
-			order(asc, columns);
-		}
-	}
-
-	/**
-	 * Syntax: group( fielda, table.fieldb , ... )
-	 *
-	 */
-	private class Group extends Function {
-		public Group() {
-			argumentsTakesTableOrColumn(1);
-		}
-
-		/* FIND COLUMN(S) FOR THE GROUP.
-		*/
-		protected void processor1(String s) throws Exception {
-			columns.add(s);
-		}
-
-		public void post() throws Exception {
-			group(columns);
-		}
-	}
-
-	/**
-	 * Syntax: print( column1 , column2 , ... )
-	 */
-	private class Print extends Function {
-		public Print() {
-			argumentsTakesTableOrColumn(1);
-		}
-
-		/* FIND COLUMN WHICH TO PRINT.
-		*/
-		protected void processor1(String s) throws Exception {
-			columns.add(s);
-		}
-
-		public void post() throws Exception {
-			print(columns);
-		}
-	}
-
-	/**
-	 * Syntax: like( column , 'aa%bb' )
-	 */
-	private class Like extends Function {
-		public Like() {
-			argumentsTakesTableOrColumn(1);
-		}
-
-		/* FIND FIELD ON WHICH TO FILTER.
-		*/
-		protected void processor1(String s) throws Exception {
-			column = s;
-			nextMandatoryStep();
-		}
-
-		/* CONSUME LIKE PATTERN.
-		*/
-		protected void processor2(String s) throws Exception {
-			value = s;
-
-			finished();
-		}
-
-		public void post() throws Exception {
-			like(column, value);
-		}
-	}
 
 	/**
 	 * Syntax: notfilter( column , value1 , value2 , ... )
 	 */
 	private class NotFilter extends Filter {
-		public NotFilter() {
-			super(false);
-		}
+		public NotFilter() { super(false); }
 	}
 
-	/**
-	 * Syntax:
-     * filter(column, value1, value2, ...)
-     * filter(column, operator, value)
-     *
-     * Note: if you want to filter on for instance '<', you have to put the '<' sign between quotes.
-     *       Thus: filter(column, '<')
-     *       When leaving out the quotes, then it is seen as an operator.
-	 */
-	private class Filter extends Function {
-		private boolean inclusive = true;
+    private class StatementChopper implements Iterable<String> {
+        private final char[] chars;
 
-		public Filter() {
-			argumentsTakesTableOrColumn(1);
-		}
+        private int pointer = 0;
 
-		public Filter(boolean inclusive) {
-			this();
-			this.inclusive = inclusive;
-		}
+        private boolean quotedArea = false;
 
-		/* Find column on which to filter.
-		*/
-		protected void processor1(String s) throws Exception {
-			column = s;
-			nextMandatoryStep();
-		}
-
-		/* Find values/operator on which to filter.
-		*/
-		protected void processor2(String s) throws Exception {
-            values.add(s);
-		}
-
-		public void post() throws Exception {
-            filter(column, values, inclusive);
-		}
-	}
-
-	/**
-	 Syntax:
-	  ref( table , reference );
-	  ref( table.column , reference );
-
-	  Note:
-	  1> Reference is number which should equal or greater then 1.
-
-	  2> The opposite equivalent of this function is the newtable function which can be used to add another instance of the same table to
-	  the query.
-
-	  3> Note: Ref can only called as an argument of an other function.
-	 */
-	private class Ref extends Function {
-		private String reference = null;
-
-		/* FIND TABLE/COLUMN ON FOR WHICH TO FIND THE ALIAS.
-		*/
-		protected void processor1(String s) throws Exception {
-			column = s;
-			nextMandatoryStep();
-		}
-
-		/* FIND THE REFERENCE.
-		*/
-		protected void processor2(String s) throws Exception {
-			value = s;
-			finished();
-		}
-
-		protected void post() throws Exception {
-			reference = ref(column, value);
-		}
-
-		public String getReference() {
-			return reference;
-		}
-	}
-
-	/**
-	 * Syntax: newtable( table )
-	 *
-	 * Note: NewTable can only called as an argument of an other function.
-	 */
-	private class NewTable extends Function {
-		private String alias = null;
-
-		public NewTable() {
-			this.argumentsTakesTableOrColumn(1);
-		}
-
-		/* FETCH THE TABLE NAME.
-		*/
-		protected void processor1(String s) throws Exception {
-			table = s;
-			finished();
-		}
-
-		protected void post() throws Exception {
-			alias = getAlias(table, true);
-		}
-
-		public String getTable() {
-			return table;
-		}
-
-		public String getTableAlias() {
-			return alias;
-		}
-	}
-
-	/**
-	 * Syntax:
-	 *  distinct-constant( constant, constant , ... )
-	   *
-	 * Note: user can add columns and constants to the function in a random order.
-	 */
-	private class DistinctConstant extends Function {
-		public DistinctConstant() { // Needed for instantiation.
-		}
-
-		/* FIND CONSTANT(S) FOR THE DISTINCT.
-		*/
-		protected void processor1(String s) throws Exception {
-			values.add(s);
-		}
-
-		public void post() throws Exception {
-			distinctConstants(values);
-		}
-	}
-
-	/**
-	 * Syntax:
-	 *  distinct-column( column, column , ... )
-	   *
-	 * Note: user can add columns and constants to the function in a random order.
-	 */
-	private class Distinct extends Function {
-		public Distinct() {
-			argumentsTakesTableOrColumn(1);
-		}
-
-		/* FIND COLUMN(S) FOR THE DISTINCT.
-		*/
-		protected void processor1(String s) throws Exception {
-			/* Check if argument is a table. If so, all fields of table are selected.
-			Argument can also be a reference when the table was referred with the ref( table, occ ) function.
-			*/
-			if (isTable(s)) {
-				s = getAlias(s) + ".*";
-			} else if (isAlias(s)) {
-				s = s + ".*";
-			}
-
-			columns.add(s);
-		}
-
-		public void post() throws Exception {
-			distinct(columns);
-		}
-	}
-
-	private class InnerJoin extends Join {
-	    public InnerJoin() {
-	        super(JOIN_TYPE.INNER);
+        public StatementChopper(String statement) {
+            this.chars = statement.toCharArray();
         }
-    }
 
-	private class LeftJoin extends Join {
-		public LeftJoin() {
-			super(JOIN_TYPE.LEFT);
-		}
-	}
-
-	private class RightJoin extends Join {
-		public RightJoin() {
-			super(JOIN_TYPE.RIGHT);
-		}
-	}
-
-	private class FullJoin extends Join {
-		public FullJoin() {
-			super(JOIN_TYPE.FULL);
-		}
-	}
-
-	/**
-	 Syntax:
-	    join( joinTable )
-	    join( joinTable , joinFieldDriveTable )
-	    join( joinTable , joinFieldDriveTable , joinFieldJoinTable )
-	    join( joinTable , join() , ... )
-	    join( joinTable , joinFieldDriveTable , joinFieldJoinTable , join() , ... )
-
-	 */
-	private class Join extends Function {
-		private String driveTable = null;
-		private String aliasDriveTable = null;
-
-		private String joinTable = null;
-		private String aliasJoinTable = null;
-
-		private String joinFieldDriveTable = null;
-		private String joinFieldJoinTable = null;
-
-		private JOIN_TYPE joinType=null;
-
-		public Join() {
-		}
-
-		public Join(JOIN_TYPE joinType) {
-			this.joinType = joinType;
-		}
-
-		public void setDriveTable(String driveTable, String aliasDriveTable) {
-			this.driveTable = driveTable;
-			this.aliasDriveTable = aliasDriveTable;
-		}
-
-		/* FIND TABLE TO WHICH TO JOIN.
-		*/
-		protected void processor1(String s) throws Exception {
-			/*
-			  First argument can be three things:
-
-			  1> The name of the table.
-			  2> A call to the function newtable().
-			  3> A nested statement.
-
-			The second case is used when the same table is refered multiple times in the from clause.
-			E.g. SELECT t2.field FROM a t0, b t1 , a t2 WHERE t0.id = t1.id AND t1.id = t2.id
-			This statement can be programmed as:
-
-			  a join( b , join( newtable( a ) ) print( ref( a.field , 2 )
-
-			Where the table is added to the query by using the newtable function, it can be referred by the ref function.
-			*/
-			if ("newtable".equals(s)) {
-				NewTable newTable = new NewTable();
-				newTable.execute();
-
-				joinTable = newTable.getTable();
-				aliasJoinTable = newTable.getTableAlias();
-			} else if ("(".equals(s)) {
-				Statement statement = new Statement();
-				statement.execute();
-
-				joinTable = "(" + statement.sql + ")";
-			} else {
-				checkTableOrColumnFormat(s);
-				joinTable = s;
-			}
-
-			/* To make sure that the order of the aliases (e.g. t0, t1, t2) follows the order of the table in the statement
-			(e.g. 'a join(b, join( c ) )' becomes 'SELECT * FROM a t0, b t1, c t2' as opposed to '... FROM a t0, c t1, b t2'
-			the table is now registrated in the alias administration.
-			*/
-			if (aliasJoinTable == null) {
-				aliasJoinTable = getAlias(joinTable);
-			}
-
-			nextStep();
-		}
-
-		/* FIND JOIN FIELD DRIVE TABLE OR ANOTHER JOIN.
-		*/
-		protected void processor2(String s) throws Exception {
-
-            Class<? extends Function> function = functions.get(s);
-
-            if(function != null && Join.class.isAssignableFrom(function)) {
-                exec(function, joinTable);
-
-                /* If user programs a join, it can only be followed by anthor join.
-				*/
-                nextStep(4);
-
-                return;
-            }
-
-			checkTableOrColumnFormat(s);
-
-			joinFieldDriveTable = s;
-
-			nextStep();
-		}
-
-		/* FIND JOIN FIELD JOIN TABLE OR ANOTHER JOIN.
-		*/
-		protected void processor3(String s) throws Exception {
-            Class<? extends Function> function = functions.get(s);
-
-            if(function != null && Join.class.isAssignableFrom(function)) {
-                exec(function, joinTable);
-
-                /* If user programs a join, it can only be followed by anthor join.
-				*/
-                nextStep(4);
-
-                return;
-            }
-
-			checkTableOrColumnFormat(s);
-			joinFieldJoinTable = s;
-
-			nextStep();
-		}
-
-		/* CHECK IF USER PROGRAMMED ANOTHER JOIN(S).
-		*/
-		protected void processor4(String s) throws Exception {
-
-            Class<? extends Function> function = functions.get(s);
-
-            if(function != null && Join.class.isAssignableFrom(function)) {
-                exec(function, joinTable);
-            } else {
-				syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, s);
-			}
-
-			/* User can program additional joins, but nothing else (exp: join( table, field , join() , join() , join() ).
-			*/
-		}
-
-		public void post() throws Exception {
-			join(driveTable, aliasDriveTable, joinFieldDriveTable, joinTable, aliasJoinTable, joinFieldJoinTable, joinType);
-		}
-	}
-
-	private class StatementChopper implements Iterable<String> {
-		private final char[] chars;
-
-		private int pointer = 0;
-
-		private boolean quotedArea = false;
-
-		public StatementChopper(String statement) {
-			this.chars = statement.toCharArray();
-		}
-
-		@Override
-		public Iterator<String> iterator() {
-			return new Iterator<String>() {
-				public boolean hasNext() {
+        @Override
+        public Iterator<String> iterator() {
+            return new Iterator<String>() {
+                public boolean hasNext() {
 					/* Process white spaces.
 					*/
-					for (; !quotedArea && pointer < chars.length && isWhiteSpace(chars[pointer]); pointer++) {
-					}
+                    for (; !quotedArea && pointer < chars.length && isWhiteSpace(chars[pointer]); pointer++) {
+                    }
 
-					if (pointer < chars.length) {
-						return true;
-					}
+                    if (pointer < chars.length) {
+                        return true;
+                    }
 
-					return false;
-				}
+                    return false;
+                }
 
-				public String next() {
-					if (isQuote(chars[pointer])) {
-						quotedArea = !quotedArea;
-						return "" + chars[pointer++];
-					}
+                public String next() {
+                    if (isQuote(chars[pointer])) {
+                        quotedArea = !quotedArea;
+                        return "" + chars[pointer++];
+                    }
 
-					if (isSpecialChar(chars[pointer])) {
-						return "" + chars[pointer++];
-					}
+                    if (isSpecialChar(chars[pointer])) {
+                        return "" + chars[pointer++];
+                    }
 
-					StringBuilder s = new StringBuilder();
+                    StringBuilder s = new StringBuilder();
 
 					/* When quoted, include whitespace/special chars.
 					*/
-					if (quotedArea) {
-						for (; pointer < chars.length && !isQuote(chars[pointer]); pointer++) {
-							s.append(chars[pointer]);
-						}
-					} else {
-						for (;
-						         pointer < chars.length &&
-						         !isSpecialChar(chars[pointer]) &&
-						         !isWhiteSpace(chars[pointer]) &&
-						         !isQuote(chars[pointer]); pointer++) {
-							s.append(chars[pointer]);
-						}
-					}
+                    if (quotedArea) {
+                        for (; pointer < chars.length && !isQuote(chars[pointer]); pointer++) {
+                            s.append(chars[pointer]);
+                        }
+                    } else {
+                        for (;
+                             pointer < chars.length &&
+                                     !isSpecialChar(chars[pointer]) &&
+                                     !isWhiteSpace(chars[pointer]) &&
+                                     !isQuote(chars[pointer]); pointer++) {
+                            s.append(chars[pointer]);
+                        }
+                    }
 
-					return s.toString();
-				}
+                    return s.toString();
+                }
 
-				@Override
-				public void remove() {
-				}
+                @Override
+                public void remove() {
+                }
 
-				private boolean isSpecialChar(char c) {
-					if (c == '(' || c == ')' || c == ',') {
-						return true;
-					}
+                private boolean isSpecialChar(char c) {
+                    if (c == '(' || c == ')' || c == ',') {
+                        return true;
+                    }
 
-					return false;
-				}
+                    return false;
+                }
 
-				/* Quote is also a special char, but requires unique processing.
-				*/
-				private boolean isQuote(char c) {
-					return c == '\'' ? true : false;
-				}
+                /* Quote is also a special char, but requires unique processing.
+                */
+                private boolean isQuote(char c) {
+                    return c == '\'' ? true : false;
+                }
 
-				private boolean isWhiteSpace(char c) {
-					if (c == ' ' || c == '\t' || c == '\n') {
-						return true;
-					}
+                private boolean isWhiteSpace(char c) {
+                    if (c == ' ' || c == '\t' || c == '\n') {
+                        return true;
+                    }
 
-					return false;
-				}
-			};
-		}
-	}
+                    return false;
+                }
+            };
+        }
+    }
 
-	protected abstract class Function {
-		/* Useful vars!!!!
-		*/
-		protected List<String> columns = new ArrayList<String>();
-		protected List<String> values = new ArrayList<String>();
-		protected String table = null, column = null, value = null;
-
-		private Integer step = 1;
-		protected boolean processedExpectedArguments = false;
-		private boolean expectAnotherArgument = false;
-		private boolean zeroArgumentsIsPossible = false;
-
-		private List<Integer> columnArguments = new ArrayList<>();
-
-		protected void processor1(String languageElement) throws Exception {
-		}
-
-		protected void processor2(String languageElement) throws Exception {
-		}
-
-		protected void processor3(String languageElement) throws Exception {
-		}
-
-		protected void processor4(String languageElement) throws Exception {
-		}
-
-		protected void processor5(String languageElement) throws Exception {
-		}
-
-		protected void argumentsTakesTableOrColumn(int argument) {
-			columnArguments.add(argument);
-		}
-
-		/**
-		 * If called by a function (in constructor) then there is the option to give the function no arguments.
-		 */
-		protected void zeroArgumentsIsPossible() {
-			zeroArgumentsIsPossible = true;
-		}
-
-		/**
-		 * When function has determined that function is finished (from analyzing the arguments), this method should be called.
-		 */
-		protected void finished() {
-			processedExpectedArguments = true;
-		}
-
-		/**
-		 * When function wants to go to the next (optional!!) processing step, this method should be called.
-		 */
-		protected void nextStep() {
-			step++;
-		}
-
-		protected void nextStep(int nextStep) {
-			step = nextStep;
-		}
-
-		/** When function wants to go to the next (mandatory!!) processing step, this method should be called.
-		*/
-		protected void nextMandatoryStep() {
-			step++;
-			expectAnotherArgument = true;
-		}
-
-		protected void parse() throws Exception {
-			boolean functionContinues = true;
-
-			/* Function should always begin with an opening bracket.
-			*/
-			if (!"(".equals(pop())) {
-				syntaxError(ERR_EXP_OPENING_BRACKET);
-			}
-
-			while (!processedExpectedArguments) {
-				/* Init the expected var, so it can be set by the processors.
-				*/
-				expectAnotherArgument = false;
-
-				String languageElement = pop();
-
-				if("'".equals(languageElement)) {
-					languageElement = "'" + pop() + "'";
-
-					if(!"'".equals(pop())) {
-						syntaxError(ERR_MISSING_END_QUOTE);
-					}
-				}
-
-				/* If argument is denoted as a table/column argument, do some table/column processing.
-				The processing consists of 2 things:
-				1>
-				  Process the ref function. The ref function can be used to refer tables who have multiple instances in the from clause.
-				  For instance SELECT t2.field FROM a t0 , b t1 , a t2 WHERE ... In this case the t2.field in the SELECT clause is denoted as
-				  print( ref( a , 2 ) ). The trick is now to resolve the correct alias (t1).
-				  This functions opposite equivalent is newtable() which is used to add an other instance of the same table to the query.
-				2>
-				  Columns can be noted as table.column.
-				*/
-				if (columnArguments.contains(step)) {
-					if ("ref".equals(languageElement)) {
-						Ref ref = new Ref();
-						ref.execute();
-						languageElement = ref.getReference();
-					} else {
-						languageElement = resolveColumn(languageElement);
-					}
-				}
-
-				switch (step) {
-					case 1:
-
-					  /* A function can indicate that 'no arguments' is possible. If this is not indicated, the next element
-					  should not(!!) be a closing bracket.
-					  */
-					  if (")".equals(languageElement)) {
-						  if (zeroArgumentsIsPossible) {
-							  functionContinues = false;
-
-							  /* Break immediately the while loop to avoid that the closing quote of the statement is consumed by this function.
-							  */
-							  finished();
-							  continue;
-							}
-
-						  syntaxError(ERR_FUNCTION_HAS_NO_ARGUMENTS);
-						}
-
-					  processor1(languageElement);
-					  break;
-
-					case 2:
-					  processor2(languageElement);
-					  break;
-
-					case 3:
-					  processor3(languageElement);
-					  break;
-
-					case 4:
-					  processor4(languageElement);
-					  break;
-
-					case 5:
-					  processor5(languageElement);
-					  break;
-				}
-
-				/* Argument is processed. Process now the element which follows the argument. This element can be a ',' in case the function continues
-				 or a ')' in case the function closes.
-				*/
-				functionContinues = functionContinues(!processedExpectedArguments);
-
-				if (!functionContinues) {
-					if (expectAnotherArgument) {
-						syntaxError(UNEXPECTED_END_OF_FUNCTION);
-					} else {
-						break;
-					}
-				}
-			}
-
-			if (functionContinues) {
-				syntaxError(ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
-			}
-		}
-
-		private boolean functionContinues(boolean expectAnotherArgument) throws Exception {
-			String languageElement = pop();
-
-			/* Check if function closes.
-			*/
-			if (")".equals(languageElement)) {
-				return false;
-			}
-
-			/* If function continues (as it must at this point) and a next argument is expected, then the next element should be a ','.
-			*/
-			if (expectAnotherArgument && !",".equals(languageElement)) {
-				syntaxError(ERR_EXP_COMMA, languageElement);
-			}
-
-			return true;
-		}
-
-		public void execute() throws Exception {
-			parse();
-			post();
-		}
-
-		protected abstract void post() throws Exception;
-	}
-
-	private class CustomMapping {
+    public class CustomMapping {
 		private String table1, table2, column1, column2;
 
 		public CustomMapping(String table1, String column1, String table2, String column2) throws Exception {
