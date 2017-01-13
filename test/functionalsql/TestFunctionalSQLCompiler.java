@@ -82,6 +82,7 @@ public class TestFunctionalSQLCompiler {
         @Test
     public void testJoin() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+
         assertEquals( "SELECT * FROM a t0, b t1 WHERE t0.v_a = t1.v_b", c.parse( "a join(b, v_a, v_b ) ") );
 
         try {
@@ -92,18 +93,21 @@ public class TestFunctionalSQLCompiler {
         }
 
         c.addCustomMapping("a", "v_a", "b", "v_b");
-
         assertEquals("SELECT * FROM a t0, b t1 WHERE t0.v_a = t1.v_b", c.parse( "a join(b) ") );
-
         assertEquals("SELECT * FROM a t0, b t1, c t2 WHERE t0.v_a = t1.v_b AND t0.v_a = t2.v_c", c.parse("a join(b) join(c, v_a, v_c)"));
 
         c.addCustomMapping("a", "v_a", "c", "v_c");
-
         assertEquals("SELECT * FROM a t0, b t1, c t2 WHERE t0.v_a = t1.v_b AND t0.v_a = t2.v_c", c.parse("a join(b) join(c)"));
 
         c.addCustomMapping("b", "v_b", "c", "v_c");
-
         assertEquals("SELECT * FROM a t0, b t1, c t2 WHERE t0.v_a = t1.v_b AND t1.v_b = t2.v_c", c.parse("a join(b, join(c))"));
+
+        try {
+            c.parse("a join(b, like(c))");
+            fail();
+        } catch(Exception e) {
+            checkException(e, "Cannot use function (like) as argument of this function.");
+        }
     }
 
     @Test
@@ -191,10 +195,10 @@ public class TestFunctionalSQLCompiler {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.addCustomMapping("a", "va", "b", "vb");
 
-        //assertEquals("SELECT * FROM a t0 WHERE field = '1'", c.parse("a filter(field, '1')"));
-        //assertEquals("SELECT * FROM a t0 WHERE field = 1", c.parse("a filter(field, 1)"));
-        //assertEquals("SELECT * FROM a t0 WHERE v = 'a b'", c.parse("a filter(v, 'a b')"));
-        //assertEquals("SELECT * FROM a t0 WHERE v IN ( 'a', 'b' )", c.parse("a filter(v, 'a', 'b')"));
+        assertEquals("SELECT * FROM a t0 WHERE field = '1'", c.parse("a filter(field, '1')"));
+        assertEquals("SELECT * FROM a t0 WHERE field = 1", c.parse("a filter(field, 1)"));
+        assertEquals("SELECT * FROM a t0 WHERE v = 'a b'", c.parse("a filter(v, 'a b')"));
+        assertEquals("SELECT * FROM a t0 WHERE v IN ( 'a', 'b' )", c.parse("a filter(v, 'a', 'b')"));
         assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND v IN ( 'a', 'b' )", c.parse("a join(b) filter(v, 'a', 'b')"));
         assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND t1.v IN ( 'a', 'b' )", c.parse("a join(b) filter(b.v, 'a', 'b')"));
 

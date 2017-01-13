@@ -40,8 +40,8 @@ public class Report extends Function {
             compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
         }
 
-		/* If anything else, then it is a program error.
-		*/
+        /* If anything else, then it is a program error.
+        */
         assert ("SUM".equals(function) || "MAX".equals(function) || "MIN".equals(function));
 
         statement.clauses[0] = "SELECT";
@@ -50,8 +50,8 @@ public class Report extends Function {
             statement.clauses[2] = "GROUP BY";
         }
 
-		/* Expand the select and group clause.
-		*/
+        /* Expand the select and group clause.
+        */
         for (int idx = 0; idx < columns.size(); idx++) {
             statement.clauses[0] += " " + columns.get(idx);
             statement.clauses[2] += " " + columns.get(idx);
@@ -62,8 +62,8 @@ public class Report extends Function {
             }
         }
 
-		/* Add the summation function to the select clause.
-		*/
+        /* Add the summation function to the select clause.
+        */
         statement.clauses[0] += String.format("%s %s( %s )", columns.size() > 0 ? "," : "", function, reportFunction);
     }
 }

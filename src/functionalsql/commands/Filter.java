@@ -1,7 +1,6 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
-import functionalsql.FunctionalSQLCompiler;
 
 import java.util.List;
 
@@ -79,8 +78,8 @@ public class Filter extends Function {
     }
 
     protected void filterOnValues(String column, List<String> values, boolean inclusive) throws Exception {
-		/* If list is null or has no values, it is a program error.
-		*/
+        /* If list is null or has no values, it is a program error.
+        */
         assert (values != null && values.size() > 0);
 
         for(String value : values) {
@@ -91,8 +90,8 @@ public class Filter extends Function {
 
         String filterClause;
 
-		/* Expand the where clause
-		*/
+        /* Expand the where clause
+        */
         if (values.size() == 0) {
             filterClause = String.format("%s %s NULL", column, inclusive ? "IS" : "IS NOT");
         } else if (values.size() == 1) {
@@ -118,49 +117,6 @@ public class Filter extends Function {
 
         if (!statement.filterClauses.contains(filterClause)) {
             statement.filterClauses.add(filterClause);
-        }
-    }
-
-    public static class FullJoin extends Join {
-        public FullJoin() {
-            super(JOIN_TYPE.FULL);
-        }
-    }
-
-    /**
-     * Syntax: group( fielda, table.fieldb , ... )
-     *
-     */
-    public static class Group extends Function {
-        public Group() {
-            argumentsTakesTableOrColumn(1);
-        }
-
-        /* FIND COLUMN(S) FOR THE GROUP.
-        */
-        protected void processor1(String s) throws Exception {
-            columns.add(s);
-        }
-
-        public void execute() throws Exception {
-            if (statement.clauses[0] != null) {
-                compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
-            }
-
-            statement.clauses[0] = "SELECT";
-            statement.clauses[2] = "GROUP BY";
-
-            /* Expand the select and group clause.
-            */
-            for (int idx = 0; idx < columns.size(); idx++) {
-                statement.clauses[0] += " " + columns.get(idx);
-                statement.clauses[2] += " " + columns.get(idx);
-
-                if (idx < columns.size() - 1) {
-                    statement.clauses[0] += ",";
-                    statement.clauses[2] += ",";
-                }
-            }
         }
     }
 }

@@ -29,8 +29,8 @@ public class Order extends Function {
             statement.clauses[1] = "ORDER BY";
         }
 
-		/* Expand the order by clause.
-		*/
+        /* Expand the order by clause.
+        */
         for (int idx = 0; idx < columns.size(); idx++) {
             statement.clauses[1] += " " + columns.get(idx);
 

@@ -26,14 +26,14 @@ public class Print extends Function {
 
         statement.clauses[0] = "SELECT";
 
-		/* Expand the select clause.
-		*/
+        /* Expand the select clause.
+        */
         for (int idx = 0; idx < columns.size(); idx++) {
             String column = columns.get(idx);
 
-			/* Check if argument is a table. If so, all fields of table are selected.
-			Argument can also be a reference when the table was referred with the ref( table, occ ) function.
-			*/
+            /* Check if argument is a table. If so, all fields of table are selected.
+            Argument can also be a reference when the table was referred with the ref( table, occ ) function.
+            */
             if (statement.isTable(column)) {
                 column = statement.getAlias(column) + ".*";
             } else if (statement.isAlias(column)) {

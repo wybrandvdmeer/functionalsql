@@ -4,7 +4,6 @@ import java.util.*;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION;
 import static functionalsql.FunctionalSQLCompiler.ERR_NULL_TABLE;
-import static jdk.nashorn.internal.runtime.ECMAErrors.syntaxError;
 
 public class Statement extends Function {
     public String[] clauses = new String[3]; // Contains SELECT, FROM, ORDER AND GROUP.
@@ -55,14 +54,14 @@ public class Statement extends Function {
             }
         }
 
-            /* GROUP BY clause.
-            */
+        /* GROUP BY clause.
+        */
         if (clauses[2] != null) {
             sql += (" " + clauses[2]);
         }
 
-            /* ORDER clause.
-            */
+        /* ORDER clause.
+        */
         if (clauses[1] != null) {
             sql += (" " + clauses[1]);
         }
@@ -100,7 +99,7 @@ public class Statement extends Function {
 
     public String getAlias(String table, boolean forceNewAlias) throws Exception {
         if (table == null) {
-            syntaxError(ERR_NULL_TABLE);
+            compiler.syntaxError(ERR_NULL_TABLE);
         }
 
         String alias = null;
@@ -109,7 +108,7 @@ public class Statement extends Function {
             for (Map.Entry<String, String> entry : aliases.entrySet()) {
                 if (entry.getValue().equals(table)) {
                     if (alias != null) {
-                        syntaxError(ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION, table);
+                        compiler.syntaxError(ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION, table);
                     }
 
                     alias = entry.getKey();

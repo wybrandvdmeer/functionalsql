@@ -21,9 +21,9 @@ public class Distinct extends Function {
     /* FIND COLUMN(S) FOR THE DISTINCT.
     */
     protected void processor1(String s) throws Exception {
-			/* Check if argument is a table. If so, all fields of table are selected.
-			Argument can also be a reference when the table was referred with the ref( table, occ ) function.
-			*/
+        /* Check if argument is a table. If so, all fields of table are selected.
+        Argument can also be a reference when the table was referred with the ref( table, occ ) function.
+        */
         if (statement.isTable(s)) {
             s = statement.getAlias(s) + ".*";
         } else if (statement.isAlias(s)) {
@@ -52,8 +52,8 @@ public class Distinct extends Function {
             statement.clauses[0] = "SELECT DISTINCT";
         }
 
-		/* Expand the select clause.
-		*/
+        /* Expand the select clause.
+        */
         for (int idx = 0; idx < columns.size(); idx++) {
             statement.clauses[0] += " " + columns.get(idx);
 

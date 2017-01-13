@@ -8,7 +8,6 @@ import java.util.Map;
 import static functionalsql.FunctionalSQLCompiler.*;
 
 /**
- /**
  Syntax:
  ref( table , reference );
  ref( table.column , reference );
@@ -49,8 +48,8 @@ public class Ref extends Function {
     private String ref(String tableColumn, String reference) throws Exception {
         String[] tableAndColumn = compiler.splitTableColumn(tableColumn);
 
-		/* If ref is programmed, the referenced table should already be processed.
-		 */
+        /* If ref is programmed, the referenced table should already be processed.
+        */
         if (!statement.isTable(tableAndColumn[0])) {
             compiler.syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, tableAndColumn[0]);
         }

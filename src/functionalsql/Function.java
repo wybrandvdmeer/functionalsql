@@ -1,13 +1,16 @@
 package functionalsql;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class Function {
 
     protected FunctionalSQLCompiler compiler;
-
     protected Statement statement;
+
+    private Map<Integer, List<Class<? extends Function>>> expectedFunctionsPerStep = new HashMap<>();
 
     /* Useful vars!!!!
     */
@@ -34,6 +37,16 @@ public abstract class Function {
         return columnArguments.contains(argument);
     }
 
+    public void process(Function function) throws Exception {
+        expectAnotherArgument = false;
+        switch(step) {
+            case 1: processor1(function); break;
+            case 2: processor2(function); break;
+            case 3: processor3(function); break;
+            case 4: processor4(function); break;
+        }
+    }
+
     public void process(String languageElement) throws Exception{
         expectAnotherArgument = false;
         switch(step) {
@@ -42,6 +55,18 @@ public abstract class Function {
             case 3: processor3(languageElement); break;
             case 4: processor4(languageElement); break;
         }
+    }
+
+    protected void processor1(Function function) throws Exception {
+    }
+
+    protected void processor2(Function function) throws Exception {
+    }
+
+    protected void processor3(Function function) throws Exception {
+    }
+
+    protected void processor4(Function function) throws Exception {
     }
 
     protected void processor1(String languageElement) throws Exception {
@@ -100,6 +125,15 @@ public abstract class Function {
 
     public boolean expectAnotherArgument() {
         return expectAnotherArgument && !finished;
+    }
+
+    public void addExpectedFunction(Integer step, Class<? extends Function> function) {
+        expectedFunctionsPerStep.computeIfAbsent(step, value -> new ArrayList<>()).add(function);
+    }
+
+    public boolean isFunctionExpected(Class<? extends Function> function) {
+        List<Class<? extends Function>> expectedFunctions = expectedFunctionsPerStep.get(step);
+        return expectedFunctions != null ? expectedFunctions.contains(function) : false;
     }
 
     public abstract void execute() throws Exception;
