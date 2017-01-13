@@ -1,4 +1,4 @@
-package functionalsql;
+package customfunctionalsql;
 
 import customfunctionalsql.CustomFunctionalSQLCompiler;
 import org.junit.Test;

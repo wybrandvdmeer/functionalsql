@@ -1,13 +1,12 @@
 package customfunctionalsql;
 
-import functionalsql.Filter;
+import functionalsql.commands.Filter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static customfunctionalsql.CustomFunctionalSQLCompiler.ERR_ARGUMENT_SHOULD_BE_NUMMERICAL;
 import static functionalsql.FunctionalSQLCompiler.ERR_REFERING_TO_A_NON_EXISTING_TABLE;
-import static functionalsql.FunctionalSQLCompiler.syntaxError;
 
 /**
  * Example of a custom function.
@@ -39,12 +38,12 @@ public class Id extends Filter {
         try {
             Integer.parseInt(value2 == null ? value1 : value2);
         } catch(NumberFormatException e) {
-            syntaxError(ERR_ARGUMENT_SHOULD_BE_NUMMERICAL, value2 == null ? value1 : value2);
+            compiler.syntaxError(ERR_ARGUMENT_SHOULD_BE_NUMMERICAL, value2 == null ? value1 : value2);
         }
 
         if(value2 != null) {
             if(!statement.isTable(value1)) {
-                syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, value1);
+                compiler.syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, value1);
             }
 
             value1 = statement.getAlias(value1);

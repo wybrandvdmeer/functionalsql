@@ -1,4 +1,7 @@
-package functionalsql;
+package functionalsql.commands;
+
+import functionalsql.Function;
+import functionalsql.FunctionalSQLCompiler;
 
 import java.util.List;
 
@@ -43,7 +46,7 @@ public class Filter extends Function {
     }
 
     protected void filter(String column, List<String> values, boolean inclusive) throws Exception {
-        if(values.size() >= 1 && !isQuoted(values.get(0)) &&
+        if(values.size() >= 1 && !compiler.isQuoted(values.get(0)) &&
                 ( values.get(0).equals("<") ||
                         values.get(0).equals(">") ||
                         values.get(0).equals("<=") ||
@@ -61,11 +64,11 @@ public class Filter extends Function {
         String operator = values.remove(0);
 
         if(values.size() == 0) {
-            syntaxError(ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER);
+            compiler.syntaxError(ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER);
         }
 
         if(values.size() > 1) {
-            syntaxError(ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER, values);
+            compiler.syntaxError(ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER, values);
         }
 
         String filterClause = String.format("%s %s %s", column, operator, values.get(0));
@@ -81,8 +84,8 @@ public class Filter extends Function {
         assert (values != null && values.size() > 0);
 
         for(String value : values) {
-            if(!isNummeric(value) && !isQuoted(value)) {
-                syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
+            if(!compiler.isNummeric(value) && !compiler.isQuoted(value)) {
+                compiler.syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
             }
         }
 
@@ -115,6 +118,49 @@ public class Filter extends Function {
 
         if (!statement.filterClauses.contains(filterClause)) {
             statement.filterClauses.add(filterClause);
+        }
+    }
+
+    public static class FullJoin extends Join {
+        public FullJoin() {
+            super(JOIN_TYPE.FULL);
+        }
+    }
+
+    /**
+     * Syntax: group( fielda, table.fieldb , ... )
+     *
+     */
+    public static class Group extends Function {
+        public Group() {
+            argumentsTakesTableOrColumn(1);
+        }
+
+        /* FIND COLUMN(S) FOR THE GROUP.
+        */
+        protected void processor1(String s) throws Exception {
+            columns.add(s);
+        }
+
+        public void execute() throws Exception {
+            if (statement.clauses[0] != null) {
+                compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
+            }
+
+            statement.clauses[0] = "SELECT";
+            statement.clauses[2] = "GROUP BY";
+
+            /* Expand the select and group clause.
+            */
+            for (int idx = 0; idx < columns.size(); idx++) {
+                statement.clauses[0] += " " + columns.get(idx);
+                statement.clauses[2] += " " + columns.get(idx);
+
+                if (idx < columns.size() - 1) {
+                    statement.clauses[0] += ",";
+                    statement.clauses[2] += ",";
+                }
+            }
         }
     }
 }

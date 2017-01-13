@@ -1,4 +1,7 @@
-package functionalsql;
+package functionalsql.commands;
+
+import functionalsql.Function;
+import functionalsql.FunctionalSQLCompiler;
 
 import java.util.Map;
 
@@ -35,7 +38,7 @@ public class Ref extends Function {
         finished();
     }
 
-    protected void execute() throws Exception {
+    public void execute() throws Exception {
         reference = ref(column, value);
     }
 
@@ -49,15 +52,15 @@ public class Ref extends Function {
 		/* If ref is programmed, the referenced table should already be processed.
 		 */
         if (!statement.isTable(tableAndColumn[0])) {
-            syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, tableAndColumn[0]);
+            compiler.syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, tableAndColumn[0]);
         }
 
-        if (!isNummeric(reference)) {
-            syntaxError(ERR_TABLE_REFERENCE_SHOULD_BE_NUMMERICAL, reference);
+        if (!compiler.isNummeric(reference)) {
+            compiler.syntaxError(ERR_TABLE_REFERENCE_SHOULD_BE_NUMMERICAL, reference);
         }
 
         if (Integer.parseInt(reference) < 1) {
-            syntaxError(ERR_TABLE_REFERENCE_SHOULD_BE_EQUAL_OR_GREATER_THEN_ONE, reference);
+            compiler.syntaxError(ERR_TABLE_REFERENCE_SHOULD_BE_EQUAL_OR_GREATER_THEN_ONE, reference);
         }
 
         int idx = 0;
@@ -77,7 +80,7 @@ public class Ref extends Function {
         }
 
         if (alias == null) {
-            syntaxError(ERR_TABLE_REFERENCE_IS_NOT_CORRECT, reference);
+            compiler.syntaxError(ERR_TABLE_REFERENCE_IS_NOT_CORRECT, reference);
         }
 
         return alias + (tableAndColumn.length > 1 ? ("." + tableAndColumn[1]) : ""); // E.g. t0 or t0.column

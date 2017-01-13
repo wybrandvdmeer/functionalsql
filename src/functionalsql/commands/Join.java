@@ -1,4 +1,8 @@
-package functionalsql;
+package functionalsql.commands;
+
+import functionalsql.Function;
+import functionalsql.FunctionalSQLCompiler;
+import functionalsql.Statement;
 
 import static functionalsql.FunctionalSQLCompiler.*;
 
@@ -60,7 +64,7 @@ public class Join extends Function {
 
         Class<? extends Function> function = compiler.getFunction(s);
 
-        if(function != null && NewTable.class.isAssignableFrom(function)) {
+        if(function != null && NewTable.class == function) {
             Function newTable = compiler.exec(statement, function, joinTable);
             joinTable = newTable.getTable();
             aliasJoinTable = ((NewTable)newTable).getTableAlias();
@@ -70,7 +74,7 @@ public class Join extends Function {
 
             joinTable = "(" + statement.getSql() + ")";
         } else {
-            checkTableOrColumnFormat(s);
+            compiler.checkTableOrColumnFormat(s);
             joinTable = s;
         }
 
@@ -101,7 +105,7 @@ public class Join extends Function {
             return;
         }
 
-        checkTableOrColumnFormat(s);
+        compiler.checkTableOrColumnFormat(s);
 
         joinFieldDriveTable = s;
 
@@ -123,7 +127,7 @@ public class Join extends Function {
             return;
         }
 
-        checkTableOrColumnFormat(s);
+        compiler.checkTableOrColumnFormat(s);
         joinFieldJoinTable = s;
 
         nextStep();
@@ -138,7 +142,7 @@ public class Join extends Function {
         if(function != null && Join.class.isAssignableFrom(function)) {
             compiler.exec(statement, function, joinTable);
         } else {
-            syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, s);
+            compiler.syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, s);
         }
 
         /* User can program additional joins, but nothing else (exp: join( table, field , join() , join() , join() ).
@@ -187,7 +191,7 @@ public class Join extends Function {
 			/* If join fields are not programmed and there are also no cumstom mappings, then we cannot define the join.
 			*/
             if (c == null) {
-                syntaxError(ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT);
+                compiler.syntaxError(ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT);
             }
 
             joinColumnJoinTable = c.getColumn(joinTable);
@@ -209,7 +213,7 @@ public class Join extends Function {
 		*/
         String clause;
 
-        if (aliasToNumber(aliasDriveTable) < aliasToNumber(aliasJoinTable)) {
+        if (compiler.aliasToNumber(aliasDriveTable) < compiler.aliasToNumber(aliasJoinTable)) {
             clause = String.format("%s.%s = %s.%s",
                     aliasDriveTable,
                     joinColumnDriveTable,

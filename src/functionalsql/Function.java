@@ -1,6 +1,5 @@
 package functionalsql;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -103,5 +102,5 @@ public abstract class Function {
         return expectAnotherArgument && !finished;
     }
 
-    abstract void execute() throws Exception;
+    public abstract void execute() throws Exception;
 }

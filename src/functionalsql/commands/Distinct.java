@@ -1,9 +1,11 @@
-package functionalsql;
+package functionalsql.commands;
+
+import functionalsql.Function;
+import functionalsql.FunctionalSQLCompiler;
 
 import java.util.List;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
-import static functionalsql.FunctionalSQLCompiler.syntaxError;
 
 /**
  * Syntax:
@@ -42,7 +44,7 @@ public class Distinct extends Function {
 
         if (statement.clauses[0] != null) {
             if (!statement.clauses[0].startsWith("SELECT DISTINCT")) {
-                syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
+                compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
             }
 
             statement.clauses[0] += ",";

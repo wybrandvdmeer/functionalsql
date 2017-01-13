@@ -1,4 +1,4 @@
-package functionalsql;
+package functionalsql.commands;
 
 public class InnerJoin extends Join {
     public InnerJoin() {

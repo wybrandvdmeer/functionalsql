@@ -1,5 +1,8 @@
-package functionalsql;
+package functionalsql.commands;
 
+
+import functionalsql.Function;
+import functionalsql.FunctionalSQLCompiler;
 
 import static functionalsql.FunctionalSQLCompiler.*;
 
@@ -26,8 +29,8 @@ public class Like extends Function {
     }
 
     public void execute() throws Exception {
-        if(!isNummeric(value) && !isQuoted(value)) {
-            syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
+        if(!compiler.isNummeric(value) && !compiler.isQuoted(value)) {
+            compiler.syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
         }
 
         statement.filterClauses.add(String.format("%s LIKE %s", column, value));

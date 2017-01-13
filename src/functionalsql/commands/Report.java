@@ -1,7 +1,9 @@
-package functionalsql;
+package functionalsql.commands;
+
+import functionalsql.Function;
+import functionalsql.FunctionalSQLCompiler;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
-import static functionalsql.FunctionalSQLCompiler.syntaxError;
 
 /**
  * Syntax: (sum|max|min)( summation_column | nummerical_constant , field1 , table.field2 , ... )
@@ -35,7 +37,7 @@ public class Report extends Function {
 
     public void execute() throws Exception {
         if (statement.clauses[0] != null) {
-            syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
+            compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
         }
 
 		/* If anything else, then it is a program error.

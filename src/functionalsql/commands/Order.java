@@ -1,6 +1,7 @@
-package functionalsql;
+package functionalsql.commands;
 
-import java.util.List;
+import functionalsql.Function;
+import functionalsql.FunctionalSQLCompiler;
 
 /**
  * Syntax: asc( fielda, table.fieldb , ... )

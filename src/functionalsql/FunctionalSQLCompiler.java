@@ -1,8 +1,9 @@
 package functionalsql;
 
+import functionalsql.commands.*;
+
 import java.lang.reflect.Constructor;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 /**
@@ -82,11 +83,11 @@ public class FunctionalSQLCompiler {
         functions.put("innerjoin", InnerJoin.class);
 		functions.put("leftjoin", LeftJoin.class);
 		functions.put("rightjoin", RightJoin.class);
-		functions.put("fulljoin", FullJoin.class);
+		functions.put("fulljoin", Filter.FullJoin.class);
 		functions.put("printSQL", null);
 		functions.put("print", Print.class);
 		functions.put("like", Like.class);
-		functions.put("group", Group.class);
+		functions.put("group", Filter.Group.class);
 		functions.put("asc", Order.class);
 		functions.put("desc", Desc.class);
 		functions.put("sum", Sum.class);
@@ -95,7 +96,7 @@ public class FunctionalSQLCompiler {
 		functions.put("min", Min.class);
 		functions.put("max", Max.class);
 		functions.put("filter", Filter.class);
-		functions.put("filterdate", FilterDate.class);
+		functions.put("filterdate", Desc.FilterDate.class);
 		functions.put("notfilter", NotFilter.class);
         functions.put("newtable", NewTable.class);
         functions.put("ref", Ref.class);
@@ -190,7 +191,7 @@ public class FunctionalSQLCompiler {
 		return s.getSql();
 	}
 
-	void parse(Statement statement) throws Exception {
+	public void parse(Statement statement) throws Exception {
 
         /* Administrate this statement to the list of statements which functions as a stack.
 		*/
@@ -379,7 +380,7 @@ public class FunctionalSQLCompiler {
 		return null;
 	}
 
-	public static void syntaxError(String format, Object... args) throws Exception {
+	public void syntaxError(String format, Object... args) throws Exception {
 		String error = String.format(format, args);
 		throw new Exception(String.format("Syntax error: %s\n", error));
 	}
@@ -405,7 +406,7 @@ public class FunctionalSQLCompiler {
 		return null;
 	}
 
-	static int aliasToNumber(String alias) {
+	public int aliasToNumber(String alias) {
 		return Integer.parseInt(alias.substring(1));
 	}
 
@@ -413,7 +414,7 @@ public class FunctionalSQLCompiler {
 		return originalStatement;
 	}
 
-    static boolean isQuoted(String value) {
+    public boolean isQuoted(String value) {
         return value.getBytes()[0] == '\''; // End quote is checked by the Function class.
     }
 
@@ -423,7 +424,7 @@ public class FunctionalSQLCompiler {
 	 * @return Table and or column.
 	 * @throws Exception Thrown in case of an error.
 	 */
-	protected String[] splitTableColumn(String s) throws Exception {
+	public String[] splitTableColumn(String s) throws Exception {
 		int idx = s.indexOf('.');
 
 		if (idx == 0) {
@@ -462,21 +463,21 @@ public class FunctionalSQLCompiler {
 		return getTopStatement().getAlias(tableAndColumn[0]) + "." + tableAndColumn[1];
 	}
 
-	static void checkTableOrColumnFormat(String s) throws Exception {
+	public void checkTableOrColumnFormat(String s) throws Exception {
 		if(s != null && !isTableOrColumnName(s)) {
 			syntaxError(ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME, s);
 		}
 	}
 
-	static boolean isTableOrColumnName(String value) {
+	public boolean isTableOrColumnName(String value) {
 		return TABLE_COLUMN_FORMAT.matcher(value).matches();
 	}
 
-	static boolean isNummeric(String s) {
+	public boolean isNummeric(String s) {
 		return NUMMERIC_FORMAT.matcher(s).matches();
 	}
 
-    Function exec(Statement statement, Class<? extends Function> function, String driveTable) throws Exception {
+    public Function exec(Statement statement, Class<? extends Function> function, String driveTable) throws Exception {
 		/* If you want to instantiate an inner class, you have to search for the constructor which takes the super class as
 		an argument.
 		*/

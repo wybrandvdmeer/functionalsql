@@ -1,7 +1,9 @@
-package functionalsql;
+package functionalsql.commands;
+
+import functionalsql.Function;
+import functionalsql.FunctionalSQLCompiler;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
-import static functionalsql.FunctionalSQLCompiler.syntaxError;
 
 /**
  * Syntax: print( column1 , column2 , ... )
@@ -19,7 +21,7 @@ public class Print extends Function {
 
     public void execute() throws Exception {
         if (statement.clauses[0] != null) {
-            syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
+            compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
         }
 
         statement.clauses[0] = "SELECT";

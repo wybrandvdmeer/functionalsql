@@ -4,7 +4,7 @@ import java.util.*;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION;
 import static functionalsql.FunctionalSQLCompiler.ERR_NULL_TABLE;
-import static functionalsql.FunctionalSQLCompiler.syntaxError;
+import static jdk.nashorn.internal.runtime.ECMAErrors.syntaxError;
 
 public class Statement extends Function {
     public String[] clauses = new String[3]; // Contains SELECT, FROM, ORDER AND GROUP.
@@ -15,7 +15,7 @@ public class Statement extends Function {
 
     private String sql;
 
-    void compileSQL() throws Exception {
+    public void compileSQL() throws Exception {
         if (clauses[0] == null) {
             clauses[0] = "SELECT *";
         }
@@ -55,14 +55,14 @@ public class Statement extends Function {
             }
         }
 
-		/* GROUP BY clause.
-        */
+            /* GROUP BY clause.
+            */
         if (clauses[2] != null) {
             sql += (" " + clauses[2]);
         }
 
-        /* ORDER clause.
-		*/
+            /* ORDER clause.
+            */
         if (clauses[1] != null) {
             sql += (" " + clauses[1]);
         }
@@ -72,7 +72,7 @@ public class Statement extends Function {
         return sql;
     }
 
-    protected void execute() throws Exception {
+    public void execute() throws Exception {
     }
 
     public String toString() {
@@ -98,7 +98,7 @@ public class Statement extends Function {
         return getAlias(table, false);
     }
 
-    protected String getAlias(String table, boolean forceNewAlias) throws Exception {
+    public String getAlias(String table, boolean forceNewAlias) throws Exception {
         if (table == null) {
             syntaxError(ERR_NULL_TABLE);
         }
@@ -127,7 +127,7 @@ public class Statement extends Function {
         return alias;
     }
 
-    protected boolean isAlias(String s) {
+    public boolean isAlias(String s) {
         return aliases.keySet().contains(s);
     }
 
@@ -135,4 +135,3 @@ public class Statement extends Function {
         return aliases.values().contains(s);
     }
 }
-

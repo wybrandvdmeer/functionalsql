@@ -1,4 +1,7 @@
-package functionalsql;
+package functionalsql.commands;
+
+import functionalsql.Function;
+import functionalsql.FunctionalSQLCompiler;
 
 /**
  * Syntax: newtable( table )
@@ -19,7 +22,7 @@ public class NewTable extends Function {
         finished();
     }
 
-    protected void execute() throws Exception {
+    public void execute() throws Exception {
         alias = statement.getAlias(getTable(), true);
     }
 
