@@ -65,7 +65,6 @@ public class FunctionalSQLCompiler {
 
     private List<Statement> statements = new ArrayList<>();
 
-    private boolean printSQL = false;
     private List<String> textElements;
 
     private List<CustomMapping> customMappings = new ArrayList<CustomMapping>();
@@ -168,7 +167,6 @@ public class FunctionalSQLCompiler {
 
         /* Initializing.
         */
-        printSQL = false;
         originalStatement = statement;
         textElements = new ArrayList<>();
 
@@ -181,10 +179,6 @@ public class FunctionalSQLCompiler {
         s.setStatement(s);
         parse(s);
         s.execute();
-
-        if (printSQL) {
-            throw new Exception(s.getSql());
-        }
 
         return s.getSql();
     }
