@@ -311,7 +311,7 @@ public class TestFunctionalSQLCompiler {
         c.addCustomMapping("a", "id", "b", "id");
         c.addCustomMapping("b", "id", "c", "id");
         c.addCustomMapping("a", "id", "c", "id");
-        // assertEquals("SELECT * FROM a t0 FULL JOIN b t1 ON t0.id = t1.id", c.parse("a fulljoin(b)"));
+        assertEquals("SELECT * FROM a t0 FULL JOIN b t1 ON t0.id = t1.id", c.parse("a fulljoin(b)"));
         assertEquals("SELECT * FROM a t0 FULL JOIN b t1 ON t0.id = t1.id LEFT JOIN c t2 ON t1.id = t2.id",
                 c.parse("a fulljoin(b, leftjoin(c))"));
         assertEquals("SELECT * FROM a t0 FULL JOIN b t1 ON t0.id = t1.id LEFT JOIN c t2 ON t0.id = t2.id",
