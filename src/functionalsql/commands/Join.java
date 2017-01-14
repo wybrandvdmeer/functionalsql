@@ -41,6 +41,7 @@ public class Join extends Function {
     }
 
     public Join(JOIN_TYPE joinType) {
+        this();
         this.joinType = joinType;
     }
 
@@ -58,7 +59,7 @@ public class Join extends Function {
             joinTable = function.getTable();
             aliasJoinTable = ((NewTable)function).getTableAlias();
         } else if(Statement.class == function.getClass()) {
-            joinTable = "(" + ((Statement)statement).getSql() + ")";
+            joinTable = "(" + ((Statement)function).getSql() + ")";
         }
 
         if (aliasJoinTable == null) {

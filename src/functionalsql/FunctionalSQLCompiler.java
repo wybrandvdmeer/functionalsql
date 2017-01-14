@@ -288,9 +288,7 @@ public class FunctionalSQLCompiler {
             Class<? extends Function> functionClass = getFunction(languageElement);
 
             if(functionClass != null) {
-
-                if((!function.isFunctionExpected(functionClass) ||
-                    (functionClass == Ref.class && !function.isColumn(function.getStep())))) {
+                if((!function.isFunctionExpected(functionClass) && !(functionClass == Ref.class && function.isColumn(function.getStep())))) {
                     syntaxError(ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_THIS_FUNCTION, languageElement);
                 }
 
@@ -298,7 +296,7 @@ public class FunctionalSQLCompiler {
                     Function ref = exec(functionClass, null);
                     function.process(((Ref)ref).getReference());
                 } else {
-                    if(functionClass == Join.class && function.getClass() == Join.class) {
+                    if(Join.class.isAssignableFrom(functionClass) && Join.class.isAssignableFrom(function.getClass())) {
                         function.process(exec(functionClass,((Join)function).getJoinTable()));
                     } else {
                         function.process(exec(functionClass,null));

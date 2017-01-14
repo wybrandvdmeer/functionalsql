@@ -131,9 +131,19 @@ public abstract class Function {
         expectedFunctionsPerStep.computeIfAbsent(step, value -> new ArrayList<>()).add(function);
     }
 
-    public boolean isFunctionExpected(Class<? extends Function> function) {
+    public boolean isFunctionExpected(Class<? extends Function> functionClass) {
         List<Class<? extends Function>> expectedFunctions = expectedFunctionsPerStep.get(step);
-        return expectedFunctions != null ? expectedFunctions.contains(function) : false;
+        if(expectedFunctions == null) {
+            return false;
+        }
+
+        for(Class<? extends Function> expectedClass : expectedFunctions) {
+            if(functionClass == expectedClass || expectedClass.isAssignableFrom(functionClass)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public abstract void execute() throws Exception;
