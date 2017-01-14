@@ -83,7 +83,6 @@ public class FunctionalSQLCompiler {
         functions.put("leftjoin", LeftJoin.class);
         functions.put("rightjoin", RightJoin.class);
         functions.put("fulljoin", FullJoin.class);
-        functions.put("printSQL", null);
         functions.put("print", Print.class);
         functions.put("like", Like.class);
         functions.put("group", Group.class);
@@ -198,33 +197,24 @@ public class FunctionalSQLCompiler {
 
         String token = null;
 
-        /* Token can be either a '(' (which is a new statement), a ')' (which is the end of the statement) or the drive-table.
-        */
         while (textElements.size() > 0) {
             token = textElements.get(0);
             textElements.remove(0);
 
             if (functions.containsKey(token)) {
-                Class<? extends Function> function = functions.get(token);
+                Function instance = exec(functions.get(token), getTopStatement().getDriveTableOfQuery());
 
-                if (function == null) {
-                    printSQL = true; /* PrintSQL can popup anytime. */
-                } else {
-                    Function instance = exec(function, getTopStatement().getDriveTableOfQuery());
+                if (instance instanceof Statement) {
+                    String nestedQuery = ((Statement) instance).getSql();
 
-                    if (instance instanceof Statement) {
-                        String nestedQuery = ((Statement) instance).getSql();
-
-                        if(statement.isFullSelect()) {
-                            statement.copyStatement(((Statement)instance));
-                        } else {
-                            statement.fromClauses.add(String.format("(%s) %s", nestedQuery, statement.getAlias(nestedQuery)));
-                        }
+                    if(statement.isFullSelect()) {
+                        statement.copyStatement(((Statement)instance));
+                    } else {
+                        statement.fromClauses.add(String.format("(%s) %s", nestedQuery, statement.getAlias(nestedQuery)));
                     }
                 }
             } else {
                 /* If token is not a function, then it can either be a ')' which is the end of the function or the drive-table.
-                Note: The openings bracket '(' is a member of the function map.
                 */
                 if (")".equals(token)) {
                     break;
@@ -234,10 +224,6 @@ public class FunctionalSQLCompiler {
                 */
                 if (statement.getTable() == null) {
                     statement.setTable(token);
-
-                    /* Put drive table in the FROM clause.
-                    NOTE: statement below must be placed here and not in compileSQL(). WHY IS THIS???????????????????
-                    */
                     statement.fromClauses.add(String.format("%s %s", statement.getTable(), statement.getAlias(statement.getTable())));
                 } else {
                     syntaxError(ERR_UNKNOWN_FUNCTION, token);
