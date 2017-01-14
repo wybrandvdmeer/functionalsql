@@ -7,8 +7,8 @@ import static functionalsql.FunctionalSQLCompiler.ERR_NULL_TABLE;
 
 public class Statement extends Function {
     public String[] clauses = new String[3]; // Contains SELECT, FROM, ORDER AND GROUP.
-    public List<String> fromClauses = new ArrayList<String>();
-    public List<String> joinClauses = new ArrayList<String>();
+    public List<String> fromClauses = new ArrayList<>();
+    public List<String> joinClauses = new ArrayList<>();
     public List<String> filterClauses = new ArrayList<String>();
     public Map<String, String> aliases = new HashMap<>(); //alias, table
 
@@ -78,11 +78,11 @@ public class Statement extends Function {
         return sql;
     }
 
-    boolean isFullSelect() {
+    public boolean isFullSelect() {
         return joinClauses.size() == 0 && filterClauses.size() == 0;
     }
 
-    void copyStatement(Statement statement) {
+    public void copyStatement(Statement statement) {
         this.clauses[0] = statement.clauses[0];
         this.clauses[1] = statement.clauses[1];
         this.clauses[2] = statement.clauses[2];
@@ -124,6 +124,16 @@ public class Statement extends Function {
 
         aliases.put(alias, table);
         return alias;
+    }
+
+    public String getDriveTableOfQuery() {
+        for (Map.Entry<String, String> entry : aliases.entrySet()) {
+            if (entry.getKey().equals("t0")) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
     }
 
     public boolean isAlias(String s) {

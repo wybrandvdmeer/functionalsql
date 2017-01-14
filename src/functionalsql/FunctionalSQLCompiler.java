@@ -213,7 +213,7 @@ public class FunctionalSQLCompiler {
                 if (function == null) {
                     printSQL = true; /* PrintSQL can popup anytime. */
                 } else {
-                    Function instance = exec(function, getDriveTableOfQuery());
+                    Function instance = exec(function, getTopStatement().getDriveTableOfQuery());
 
                     if (instance instanceof Statement) {
                         String nestedQuery = ((Statement) instance).getSql();
@@ -260,7 +260,6 @@ public class FunctionalSQLCompiler {
     }
 
     private void parse(Function function) throws Exception {
-
         /* Function should always begin with an opening bracket.
         */
         if (!"(".equals(pop())) {
@@ -270,7 +269,6 @@ public class FunctionalSQLCompiler {
         String languageElement=null;
 
         while (!function.isFinished()) {
-
             languageElement = pop();
 
             if("'".equals(languageElement)) {
@@ -418,23 +416,6 @@ public class FunctionalSQLCompiler {
         return statements.get(statements.size() - 1);
     }
 
-    /**
-     * Method gets the drive table of the query.
-     *
-     * @return The drive table.
-     */
-    protected String getDriveTableOfQuery() {
-        /* Search the drive table of the query. Drive table has always alias t0.
-        */
-        for (Map.Entry<String, String> entry : getTopStatement().aliases.entrySet()) {
-            if (entry.getKey().equals("t0")) {
-                return entry.getValue();
-            }
-        }
-
-        return null;
-    }
-
     public int aliasToNumber(String alias) {
         return Integer.parseInt(alias.substring(1));
     }
@@ -527,13 +508,6 @@ public class FunctionalSQLCompiler {
         }
 
         return instance;
-    }
-
-    /**
-     * Syntax: notfilter( column , value1 , value2 , ... )
-     */
-    private class NotFilter extends Filter {
-        public NotFilter() { super(false); }
     }
 
     private class StatementChopper implements Iterable<String> {

@@ -191,6 +191,15 @@ public class TestFunctionalSQLCompiler {
     }
 
     @Test
+    public void testNotFilter() throws Exception {
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        assertEquals("SELECT * FROM a t0 WHERE field != 1", c.parse("a notfilter(field, 1)"));
+        assertEquals("SELECT * FROM a t0 WHERE field NOT IN ( 1, 2 )", c.parse("a notfilter(field, 1, 2)"));
+        assertEquals("SELECT * FROM a t0 WHERE field != '1'", c.parse("a notfilter(field, '1')"));
+        assertEquals("SELECT * FROM a t0 WHERE field NOT IN ( '1', '2' )", c.parse("a notfilter(field, '1', '2')"));
+    }
+
+    @Test
     public void testFilter() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.addCustomMapping("a", "va", "b", "vb");
