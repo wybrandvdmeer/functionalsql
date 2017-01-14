@@ -22,7 +22,7 @@ public class Group extends Function {
     }
 
     public void execute() throws Exception {
-        if (statement.selectClause != Statement.SELECT_ALL_COLUMNS_CLAUSE) {
+        if (!statement.isVirginSelectClause()) {
             compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.selectClause);
         }
 

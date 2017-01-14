@@ -7,16 +7,16 @@ import static functionalsql.FunctionalSQLCompiler.ERR_NULL_TABLE;
 import static functionalsql.FunctionalSQLCompiler.ERR_UNKNOWN_FUNCTION;
 
 public class Statement extends Function {
-    public String selectClause = SELECT_ALL_COLUMNS_CLAUSE;
+    public String selectClause=VIRGIN_SELECT_CLAUSE;
     public String groupByClause;
     public String orderByClause;
     public List<String> fromClauses = new ArrayList<>();
     public List<String> joinClauses = new ArrayList<>();
     public List<String> filterClauses = new ArrayList<String>();
     public Map<String, String> aliases = new HashMap<>(); //alias, table
-    private String sql;
+    private final static String VIRGIN_SELECT_CLAUSE="SELECT *";
 
-    public static final String SELECT_ALL_COLUMNS_CLAUSE = "SELECT *";
+    private String sql;
 
     public Statement() {
         allowAllFunctionsAsArgument();
@@ -89,6 +89,10 @@ public class Statement extends Function {
         if (orderByClause != null) {
             sql += (" " + orderByClause);
         }
+    }
+
+    public boolean isVirginSelectClause() {
+        return VIRGIN_SELECT_CLAUSE == selectClause;
     }
 
     public String getSql() {

@@ -24,7 +24,6 @@ public class Report extends Function {
 
     protected void processor1(String s) throws Exception {
         reportFunction = s;
-
         nextStep(); // User programmed group by columns for intstance sum( 1 , field1 , field2 ).
     }
 
@@ -33,7 +32,7 @@ public class Report extends Function {
     }
 
     public void execute() throws Exception {
-        if (statement.selectClause != Statement.SELECT_ALL_COLUMNS_CLAUSE) {
+        if (!statement.isVirginSelectClause()) {
             compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.selectClause);
         }
 

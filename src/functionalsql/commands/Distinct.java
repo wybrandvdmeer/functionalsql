@@ -39,7 +39,7 @@ public class Distinct extends Function {
             return;
         }
 
-        if(statement.selectClause != Statement.SELECT_ALL_COLUMNS_CLAUSE) {
+        if(!statement.isVirginSelectClause()) {
             compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.selectClause);
         }
 
