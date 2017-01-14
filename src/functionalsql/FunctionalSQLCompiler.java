@@ -294,7 +294,7 @@ public class FunctionalSQLCompiler {
                     Function ref = exec(functionClass, null);
                     function.process(((Ref)ref).getReference());
                 } else {
-                    if(Join.class.isAssignableFrom(functionClass) && Join.class.isAssignableFrom(function.getClass())) {
+                    if(Join.class.isAssignableFrom(function.getClass())) {
                         function.process(exec(functionClass,((Join)function).getJoinTable()));
                     } else {
                         function.process(exec(functionClass,null));
