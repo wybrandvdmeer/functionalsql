@@ -227,16 +227,13 @@ public class FunctionalSQLCompiler {
                 }
 
                 if(functionClass == Ref.class) {
-                    Function ref = exec(functionClass, null);
-                    function.process(((Ref)ref).getReference());
+                    function.process(((Ref)exec(functionClass, null)).getReference());
+                } else if(Join.class.isAssignableFrom(function.getClass())) {
+                    function.process(exec(functionClass,((Join)function).getJoinTable()));
+                } else if(function.getClass() == Statement.class){
+                    function.process(exec(functionClass, ((Statement)function).getDriveTableOfQuery()));
                 } else {
-                    if(Join.class.isAssignableFrom(function.getClass())) {
-                        function.process(exec(functionClass,((Join)function).getJoinTable()));
-                    } else if(function.getClass() == Statement.class){
-                        function.process(exec(functionClass, ((Statement)function).getDriveTableOfQuery()));
-                    } else {
-                        function.process(exec(functionClass,null));
-                    }
+                    function.process(exec(functionClass,null));
                 }
             } else {
                 if (function.isColumn(function.getStep())) {

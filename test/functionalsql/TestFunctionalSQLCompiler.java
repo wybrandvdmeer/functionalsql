@@ -111,6 +111,13 @@ public class TestFunctionalSQLCompiler {
         } catch(Exception e) {
             checkException(e, "Cannot use function (like) as argument of function (join).");
         }
+
+        try {
+            c.parse("a print(asc(v1))");
+            fail();
+        } catch(Exception e) {
+            checkException(e, "Cannot use function (asc) as argument of function (print).");
+        }
     }
 
     @Test
