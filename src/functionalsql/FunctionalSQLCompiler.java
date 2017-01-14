@@ -172,15 +172,15 @@ public class FunctionalSQLCompiler {
         originalStatement = statement;
         textElements = new ArrayList<>();
 
-        /* Chop statement into language elements. The ')' token is put at the end of the statement, because a statement should
-        always be closed by a closing bracket. The opening bracket is implicitly added by executing the statement method.
-        */
         for (String s : new StatementChopper(statement + ")")) {
             textElements.add(s);
         }
 
         Statement s = new Statement();
+        s.setCompiler(this);
+        s.setStatement(s);
         parse(s);
+        s.execute();
 
         if (printSQL) {
             throw new Exception(s.getSql());
@@ -189,70 +189,29 @@ public class FunctionalSQLCompiler {
         return s.getSql();
     }
 
-    public void parse(Statement statement) throws Exception {
-
-        /* Administrate this statement to the list of statements which functions as a stack.
-        */
-        statements.add(statement);
-
-        String token = null;
-
-        while (textElements.size() > 0) {
-            token = textElements.get(0);
-            textElements.remove(0);
-
-            if (functions.containsKey(token)) {
-                Function instance = exec(functions.get(token), getTopStatement().getDriveTableOfQuery());
-
-                if (instance instanceof Statement) {
-                    String nestedQuery = ((Statement) instance).getSql();
-
-                    if(statement.isFullSelect()) {
-                        statement.copyStatement(((Statement)instance));
-                    } else {
-                        statement.fromClauses.add(String.format("(%s) %s", nestedQuery, statement.getAlias(nestedQuery)));
-                    }
-                }
-            } else {
-                /* If token is not a function, then it can either be a ')' which is the end of the function or the drive-table.
-                */
-                if (")".equals(token)) {
-                    break;
-                }
-
-                /* Get the drive table of the query.
-                */
-                if (statement.getTable() == null) {
-                    statement.setTable(token);
-                    statement.fromClauses.add(String.format("%s %s", statement.getTable(), statement.getAlias(statement.getTable())));
-                } else {
-                    syntaxError(ERR_UNKNOWN_FUNCTION, token);
-                }
-            }
-        }
-
-        if (!")".equals(token)) {
-            syntaxError(ERR_UNEXPECTED_END_OF_STATEMENT);
-        }
-
-        statement.compileSQL();
-
-        /* Remove statement from the stack.
-        */
-        statements.remove(statement);
-    }
-
+    /* Parsing of a Statement requires a little different parsing then parsing a normal function.
+    A statement is always of the form 'table function function' and a normal function is always of the form
+    function(a,b,c) e.g. usage of commas.
+    */
     private void parse(Function function) throws Exception {
-        /* Function should always begin with an opening bracket.
-        */
-        if (!"(".equals(pop())) {
-            syntaxError(ERR_EXP_OPENING_BRACKET);
+        if(function instanceof Statement) {
+            statements.add((Statement)function);
+        } else {
+            /* All Functions, except the Statement should always begin with an opening bracket.
+            */
+            if (!"(".equals(pop())) {
+                syntaxError(ERR_EXP_OPENING_BRACKET);
+            }
         }
 
         String languageElement=null;
 
         while (!function.isFinished()) {
             languageElement = pop();
+
+            if(")".equals(languageElement)) {
+                break;
+            }
 
             if("'".equals(languageElement)) {
                 languageElement = "'" + pop() + "'";
@@ -279,6 +238,8 @@ public class FunctionalSQLCompiler {
                 } else {
                     if(Join.class.isAssignableFrom(function.getClass())) {
                         function.process(exec(functionClass,((Join)function).getJoinTable()));
+                    } else if(function.getClass() == Statement.class){
+                        function.process(exec(functionClass, ((Statement)function).getDriveTableOfQuery()));
                     } else {
                         function.process(exec(functionClass,null));
                     }
@@ -291,26 +252,30 @@ public class FunctionalSQLCompiler {
                 function.process(languageElement);
             }
 
-            /* Argument is processed. Process now the element which follows the argument. This element can be a ',' in case the function continues
-            or a ')' in case the function closes.
+            /* Dont process comma when dealing with a statement.
             */
+            if(function instanceof Statement) {
+                continue;
+            }
+
             languageElement = pop();
 
             if(")".equals(languageElement)) {
                 if(function.expectAnotherArgument()) {
                     syntaxError(UNEXPECTED_END_OF_FUNCTION);
                 }
-
                 function.finished();
-            } else {
-                if(!",".equals(languageElement)) {
-                    syntaxError(ERR_EXP_COMMA, languageElement);
-                }
+            } else if(!",".equals(languageElement)) {
+                syntaxError(ERR_EXP_COMMA, languageElement);
             }
         }
 
         if(!")".equals(languageElement)) {
             syntaxError(ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
+        }
+
+        if(function instanceof Statement) {
+            statements.remove(function);
         }
     }
 
@@ -483,12 +448,8 @@ public class FunctionalSQLCompiler {
             ((Join) instance).setDriveTable(driveTable, statement.getAlias(driveTable));
         }
 
-        if(instance instanceof Statement) {
-            parse((Statement)instance);
-        } else {
-            parse(instance);
-            instance.execute();
-        }
+        parse(instance);
+        instance.execute();
 
         return instance;
     }

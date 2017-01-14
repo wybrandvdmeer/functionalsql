@@ -4,6 +4,7 @@ import java.util.*;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION;
 import static functionalsql.FunctionalSQLCompiler.ERR_NULL_TABLE;
+import static functionalsql.FunctionalSQLCompiler.ERR_UNKNOWN_FUNCTION;
 
 public class Statement extends Function {
     public String[] clauses = new String[3]; // Contains SELECT, FROM, ORDER AND GROUP.
@@ -13,6 +14,34 @@ public class Statement extends Function {
     public Map<String, String> aliases = new HashMap<>(); //alias, table
 
     private String sql;
+
+    public Statement() {
+        allowAllFunctionsAsArgument();
+    }
+
+    public void processor1(String s) throws Exception {
+        if(getTable() != null) {
+            compiler.syntaxError(ERR_UNKNOWN_FUNCTION, s);
+        }
+        setTable(s);
+        fromClauses.add(String.format("%s %s", getTable(), getAlias(getTable())));
+    }
+
+    public void processor1(Function function) throws Exception {
+        if (function instanceof Statement) {
+            String nestedQuery = ((Statement) function).getSql();
+
+            if(isFullSelect()) {
+                copyStatement(((Statement)function));
+            } else {
+                fromClauses.add(String.format("(%s) %s", nestedQuery, getAlias(nestedQuery)));
+            }
+        }
+    }
+
+    public void execute() throws Exception {
+        compileSQL();
+    }
 
     public void compileSQL() throws Exception {
         if (clauses[0] == null) {
@@ -69,9 +98,6 @@ public class Statement extends Function {
 
     public String getSql() {
         return sql;
-    }
-
-    public void execute() throws Exception {
     }
 
     public String toString() {

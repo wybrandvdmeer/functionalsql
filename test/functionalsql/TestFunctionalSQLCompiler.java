@@ -52,8 +52,11 @@ public class TestFunctionalSQLCompiler {
         assertEquals( "SELECT * FROM a t0" , c.parse( "(a)" ) );
         assertEquals( "SELECT * FROM a t0" , c.parse( "((a))" ) );
         assertEquals( "SELECT * FROM a t0" , c.parse( "(((a)))" ) );
+        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("a filter(field, 2)"));
         assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("(a) filter(field, 2)"));
         assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((a) filter(field, 2))"));
+        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((((a))) filter(field, 2))"));
+        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((a filter(field, 2)))"));
         assertEquals(c.parse("(((((a) filter(field, 2)))))"), c.parse("((((a))) filter(field, 2))"));
     }
 

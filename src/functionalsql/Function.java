@@ -21,7 +21,7 @@ public abstract class Function {
     private String table=null;
 
     private Integer step = 1;
-    private boolean finished = false, expectAnotherArgument = false;
+    private boolean finished = false, expectAnotherArgument = false, allowAllFunctionsAsArgument=false;
 
     private List<Integer> columnArguments = new ArrayList<>();
 
@@ -131,7 +131,16 @@ public abstract class Function {
         expectedFunctionsPerStep.computeIfAbsent(step, value -> new ArrayList<>()).add(function);
     }
 
+    public void allowAllFunctionsAsArgument() {
+        allowAllFunctionsAsArgument = true;
+    }
+
     public boolean isFunctionExpected(Class<? extends Function> functionClass) {
+
+        if(allowAllFunctionsAsArgument) {
+            return true;
+        }
+
         List<Class<? extends Function>> expectedFunctions = expectedFunctionsPerStep.get(step);
         if(expectedFunctions == null) {
             return false;
