@@ -34,10 +34,6 @@ public class Distinct extends Function {
     }
 
     public void execute() throws Exception {
-        distinct(columns);
-    }
-
-    protected void distinct(List<String> columns) throws Exception {
         if (columns.size() == 0) {
             return;
         }

@@ -77,9 +77,6 @@ public class FunctionalSQLCompiler {
 
     private final static Pattern NUMMERIC_FORMAT=Pattern.compile("[-]*[0-9.]*");
 
-    /**
-     * Constructor.
-     */
     public FunctionalSQLCompiler() {
         functions.put("join", Join.class);
         functions.put("innerjoin", InnerJoin.class);
@@ -487,7 +484,7 @@ public class FunctionalSQLCompiler {
         return NUMMERIC_FORMAT.matcher(s).matches();
     }
 
-    public Function exec(Class<? extends Function> function, String driveTable) throws Exception {
+    private Function exec(Class<? extends Function> function, String driveTable) throws Exception {
         Constructor<? extends Function> cons = function.getDeclaredConstructor();
         Function instance = cons.newInstance();
 
