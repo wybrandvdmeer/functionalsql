@@ -20,6 +20,7 @@ public class Statement extends Function {
 
     public Statement() {
         allowAllFunctionsAsArgument();
+        argumentsTakesTableOrColumn(1);
     }
 
     public void processor1(String s) throws Exception {

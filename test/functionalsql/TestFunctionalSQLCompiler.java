@@ -13,6 +13,14 @@ public class TestFunctionalSQLCompiler {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
+    public void testQuotedTableNameStatement() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage("Wrong format table or column name: 'a'.");
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("'a'");
+    }
+
+    @Test
     public void testQuotedTableNameJoin() throws Exception {
         expectedException.expect(Exception.class);
         expectedException.expectMessage("Wrong format table or column name: 'b'.");
@@ -48,10 +56,10 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testSelect() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        assertEquals( "SELECT * FROM a t0" , c.parse( "a" ) );
-        assertEquals( "SELECT * FROM a t0" , c.parse( "(a)" ) );
-        assertEquals( "SELECT * FROM a t0" , c.parse( "((a))" ) );
-        assertEquals( "SELECT * FROM a t0" , c.parse( "(((a)))" ) );
+        assertEquals("SELECT * FROM a t0" , c.parse( "a" ) );
+        assertEquals("SELECT * FROM a t0" , c.parse( "(a)" ) );
+        assertEquals("SELECT * FROM a t0" , c.parse( "((a))" ) );
+        assertEquals("SELECT * FROM a t0" , c.parse( "(((a)))" ) );
         assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("a filter(field, 2)"));
         assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("(a) filter(field, 2)"));
         assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((a) filter(field, 2))"));
@@ -82,7 +90,7 @@ public class TestFunctionalSQLCompiler {
                 c.parse("a join((b join(c)), id, id )") );
     }
 
-        @Test
+    @Test
     public void testJoin() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
 
