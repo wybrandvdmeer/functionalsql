@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  */
 public class FunctionalSQLCompiler {
 
-    public static final String ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_THIS_FUNCTION = "Cannot use function (%s) as argument of this function.";
+    public static final String ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION = "Cannot use function (%s) as argument of function (%s).";
 
     public static final String ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER = "Need a value to filter on when using operator in filter function.";
 
@@ -289,7 +289,7 @@ public class FunctionalSQLCompiler {
 
             if(functionClass != null) {
                 if((!function.isFunctionExpected(functionClass) && !(functionClass == Ref.class && function.isColumn(function.getStep())))) {
-                    syntaxError(ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_THIS_FUNCTION, languageElement);
+                    syntaxError(ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION, languageElement, getFSNameForFunction(function));
                 }
 
                 if(functionClass == Ref.class) {
@@ -331,6 +331,15 @@ public class FunctionalSQLCompiler {
         if(!")".equals(languageElement)) {
             syntaxError(ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
         }
+    }
+
+    private String getFSNameForFunction(Function function) {
+        for(Map.Entry<String, Class<? extends Function>> entry : functions.entrySet()) {
+            if(entry.getValue() == function.getClass()) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     private boolean isNull(String s) {

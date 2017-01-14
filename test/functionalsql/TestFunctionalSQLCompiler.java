@@ -106,7 +106,7 @@ public class TestFunctionalSQLCompiler {
             c.parse("a join(b, like(c))");
             fail();
         } catch(Exception e) {
-            checkException(e, "Cannot use function (like) as argument of this function.");
+            checkException(e, "Cannot use function (like) as argument of function (join).");
         }
     }
 
