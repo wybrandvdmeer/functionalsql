@@ -69,7 +69,7 @@ public class TestFunctionalSQLCompiler {
         c.addCustomMapping("a", "id", "c", "id");
 
         assertEquals("SELECT t0.field, t1.field, t3.field2, MAX( t3.field ) FROM a t0, b t1, c t2, c t3 WHERE t0.id = t1.id AND t0.id = t3.id AND t1.id = t2.id GROUP BY t0.field, t1.field, t3.field2",
-             c.parse("a join(b, join(c)) join(newtable(c)) max(ref(c.field, 2), a.field, b.field, ref(c.field2, 2))"));
+             c.parse("(a) join(b, join(c)) join(newtable(c)) max(ref(c.field, 2), a.field, b.field, ref(c.field2, 2))"));
     }
 
     @Test
@@ -191,6 +191,14 @@ public class TestFunctionalSQLCompiler {
         c.addCustomMapping("a", "v_a", "b", "v_b");
         assertEquals("SELECT DISTINCT va, 1, vb FROM a t0", c.parse("a distinct(va, 1, vb)"));
         assertEquals("SELECT DISTINCT t0.* FROM a t0", c.parse("a distinct(a)"));
+        assertEquals("SELECT DISTINCT a, b FROM table t0", c.parse("table distinct(a, b)"));
+
+        try {
+            c.parse("a print(v1) distinct(v2)");
+            fail();
+        } catch(Exception e) {
+            checkException(e, "Select clause (SELECT v1) is already defined.");
+        }
     }
 
     @Test

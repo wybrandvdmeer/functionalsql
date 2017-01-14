@@ -2,6 +2,7 @@ package functionalsql.commands;
 
 import functionalsql.Function;
 import functionalsql.FunctionalSQLCompiler;
+import functionalsql.Statement;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
@@ -20,11 +21,11 @@ public class Print extends Function {
     }
 
     public void execute() throws Exception {
-        if (statement.clauses[0] != null) {
-            compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
+        if (statement.selectClause != Statement.SELECT_ALL_COLUMNS_CLAUSE) {
+            compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.selectClause);
         }
 
-        statement.clauses[0] = "SELECT";
+        statement.selectClause = "SELECT";
 
         /* Expand the select clause.
         */
@@ -40,10 +41,10 @@ public class Print extends Function {
                 column = column + ".*";
             }
 
-            statement.clauses[0] += " " + column;
+            statement.selectClause += " " + column;
 
             if (idx < columns.size() - 1) {
-                statement.clauses[0] += ",";
+                statement.selectClause += ",";
             }
         }
     }

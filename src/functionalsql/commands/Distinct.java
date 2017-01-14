@@ -2,6 +2,7 @@ package functionalsql.commands;
 
 import functionalsql.Function;
 import functionalsql.FunctionalSQLCompiler;
+import functionalsql.Statement;
 
 import java.util.List;
 
@@ -38,23 +39,19 @@ public class Distinct extends Function {
             return;
         }
 
-        if (statement.clauses[0] != null) {
-            if (!statement.clauses[0].startsWith("SELECT DISTINCT")) {
-                compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
-            }
-
-            statement.clauses[0] += ",";
-        } else {
-            statement.clauses[0] = "SELECT DISTINCT";
+        if(statement.selectClause != Statement.SELECT_ALL_COLUMNS_CLAUSE) {
+            compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.selectClause);
         }
+
+        statement.selectClause = "SELECT DISTINCT";
 
         /* Expand the select clause.
         */
         for (int idx = 0; idx < columns.size(); idx++) {
-            statement.clauses[0] += " " + columns.get(idx);
+            statement.selectClause += " " + columns.get(idx);
 
             if (idx < columns.size() - 1) {
-                statement.clauses[0] += ",";
+                statement.selectClause += ",";
             }
         }
     }

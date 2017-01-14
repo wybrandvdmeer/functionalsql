@@ -2,6 +2,7 @@ package functionalsql.commands;
 
 import functionalsql.Function;
 import functionalsql.FunctionalSQLCompiler;
+import functionalsql.Statement;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
@@ -21,49 +22,45 @@ public class Report extends Function {
         argumentsTakesTableOrColumn(2);
     }
 
-    /* FIND REPORT COLUMN/NUMMERICAL CONSTANT.
-    */
     protected void processor1(String s) throws Exception {
         reportFunction = s;
 
         nextStep(); // User programmed group by columns for intstance sum( 1 , field1 , field2 ).
     }
 
-    /* FIND THE COLUMN(S) FOR THE GROUP BY.
-    */
     protected void processor2(String s) throws Exception {
         columns.add(s);
     }
 
     public void execute() throws Exception {
-        if (statement.clauses[0] != null) {
-            compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.clauses[0]);
+        if (statement.selectClause != Statement.SELECT_ALL_COLUMNS_CLAUSE) {
+            compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.selectClause);
         }
 
         /* If anything else, then it is a program error.
         */
         assert ("SUM".equals(function) || "MAX".equals(function) || "MIN".equals(function));
 
-        statement.clauses[0] = "SELECT";
+        statement.selectClause = "SELECT";
 
         if (columns.size() > 0) {
-            statement.clauses[2] = "GROUP BY";
+            statement.groupByClause = "GROUP BY";
         }
 
         /* Expand the select and group clause.
         */
         for (int idx = 0; idx < columns.size(); idx++) {
-            statement.clauses[0] += " " + columns.get(idx);
-            statement.clauses[2] += " " + columns.get(idx);
+            statement.selectClause += " " + columns.get(idx);
+            statement.groupByClause += " " + columns.get(idx);
 
             if (idx < columns.size() - 1) {
-                statement.clauses[0] += ",";
-                statement.clauses[2] += ",";
+                statement.selectClause += ",";
+                statement.groupByClause += ",";
             }
         }
 
         /* Add the summation function to the select clause.
         */
-        statement.clauses[0] += String.format("%s %s( %s )", columns.size() > 0 ? "," : "", function, reportFunction);
+        statement.selectClause += String.format("%s %s( %s )", columns.size() > 0 ? "," : "", function, reportFunction);
     }
 }

@@ -25,20 +25,20 @@ public class Order extends Function {
     }
 
     public void execute() throws Exception {
-        if (statement.clauses[1] == null) {
-            statement.clauses[1] = "ORDER BY";
+        if (statement.orderByClause == null) {
+            statement.orderByClause = "ORDER BY";
         }
 
         /* Expand the order by clause.
         */
         for (int idx = 0; idx < columns.size(); idx++) {
-            statement.clauses[1] += " " + columns.get(idx);
+            statement.orderByClause += " " + columns.get(idx);
 
             if (idx < columns.size() - 1) {
-                statement.clauses[1] += ",";
+                statement.orderByClause += ",";
             }
         }
 
-        statement.clauses[1] += asc ? " ASC" : " DESC";
+        statement.orderByClause += asc ? " ASC" : " DESC";
     }
 }

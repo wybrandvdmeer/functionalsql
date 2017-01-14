@@ -7,13 +7,16 @@ import static functionalsql.FunctionalSQLCompiler.ERR_NULL_TABLE;
 import static functionalsql.FunctionalSQLCompiler.ERR_UNKNOWN_FUNCTION;
 
 public class Statement extends Function {
-    public String[] clauses = new String[3]; // Contains SELECT, FROM, ORDER AND GROUP.
+    public String selectClause = SELECT_ALL_COLUMNS_CLAUSE;
+    public String groupByClause;
+    public String orderByClause;
     public List<String> fromClauses = new ArrayList<>();
     public List<String> joinClauses = new ArrayList<>();
     public List<String> filterClauses = new ArrayList<String>();
     public Map<String, String> aliases = new HashMap<>(); //alias, table
-
     private String sql;
+
+    public static final String SELECT_ALL_COLUMNS_CLAUSE = "SELECT *";
 
     public Statement() {
         allowAllFunctionsAsArgument();
@@ -40,15 +43,7 @@ public class Statement extends Function {
     }
 
     public void execute() throws Exception {
-        compileSQL();
-    }
-
-    public void compileSQL() throws Exception {
-        if (clauses[0] == null) {
-            clauses[0] = "SELECT *";
-        }
-
-        sql = String.format("%s ", clauses[0]); // SELECT ...
+        sql = String.format("%s ", selectClause); // SELECT ...
 
         Collections.sort(fromClauses, (s1, s2) -> s1.toCharArray()[s1.toCharArray().length - 1] - s2.toCharArray()[s2.toCharArray().length - 1]);
 
@@ -85,14 +80,14 @@ public class Statement extends Function {
 
         /* GROUP BY clause.
         */
-        if (clauses[2] != null) {
-            sql += (" " + clauses[2]);
+        if (groupByClause != null) {
+            sql += (" " + groupByClause);
         }
 
         /* ORDER clause.
         */
-        if (clauses[1] != null) {
-            sql += (" " + clauses[1]);
+        if (orderByClause != null) {
+            sql += (" " + orderByClause);
         }
     }
 
@@ -109,9 +104,9 @@ public class Statement extends Function {
     }
 
     public void copyStatement(Statement statement) {
-        this.clauses[0] = statement.clauses[0];
-        this.clauses[1] = statement.clauses[1];
-        this.clauses[2] = statement.clauses[2];
+        this.selectClause = statement.selectClause;
+        this.groupByClause = statement.groupByClause;
+        this.orderByClause = statement.orderByClause;
 
         this.aliases.putAll(statement.aliases);
         this.fromClauses.addAll(statement.fromClauses);
