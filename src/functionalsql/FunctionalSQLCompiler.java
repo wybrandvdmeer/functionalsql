@@ -59,8 +59,6 @@ public class FunctionalSQLCompiler {
 
     public static final String ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS = "Function has to many arguments.";
 
-    private static String HELP = "<table> function1 function2 ... ";
-
     private Map<String, Class<? extends Function>> functions = new HashMap<>();
 
     private List<Statement> statements = new ArrayList<>();
@@ -108,17 +106,10 @@ public class FunctionalSQLCompiler {
         if(function == null) {
             syntaxError(ERR_UNKNOWN_FUNCTION, existingFunction);
         }
-
         functions.remove(existingFunction);
-
         functions.put(newFunction, function);
     }
 
-    /**
-     * To add customized functions.
-     * @param name The name of the function as it is mentioned in the language.
-     * @param function The function class.
-     */
     public void addCustomFunction(String name, Class<? extends Function> function) {
         functions.put(name, function);
     }
@@ -159,10 +150,6 @@ public class FunctionalSQLCompiler {
     public String parse(String statement) throws Exception {
         if (isNull(statement)) {
             throw new Exception("No statement.");
-        }
-
-        if ("help".equalsIgnoreCase(statement)) {
-            throw new Exception(HELP);
         }
 
         /* Initializing.
@@ -366,12 +353,6 @@ public class FunctionalSQLCompiler {
         return value.getBytes()[0] == '\''; // End quote is checked by the Function class.
     }
 
-    /**
-     * Method splits table.column format in table and/or column.
-     * @param s The string.
-     * @return Table and or column.
-     * @throws Exception Thrown in case of an error.
-     */
     public String[] splitTableColumn(String s) throws Exception {
         int idx = s.indexOf('.');
 
