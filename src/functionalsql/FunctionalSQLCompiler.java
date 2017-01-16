@@ -110,14 +110,6 @@ public class FunctionalSQLCompiler {
         functions.put(name, function);
     }
 
-    /**
-     * To add a custom database mapping.
-     *
-     * @param table1 Drive table.
-     * @param column1 Drive table column.
-     * @param table2 Join table.
-     * @param column2 Join table column.
-     */
     public void addCustomMapping(String table1, String column1, String table2, String column2) throws Exception {
         CustomMapping c = new CustomMapping(table1, column1, table2, column2);
 
@@ -137,12 +129,6 @@ public class FunctionalSQLCompiler {
         return element;
     }
 
-    /**
-     * Parse method.
-     * @param statement The statement to parse.
-     * @return If succesful, a SQL statement.
-     * @throws Exception Thrown in case of an error in the syntax.
-     */
     public String parse(String statement) throws Exception {
         if (isNull(statement)) {
             throw new Exception("No statement.");
