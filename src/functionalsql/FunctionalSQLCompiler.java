@@ -229,7 +229,12 @@ public class FunctionalSQLCompiler {
                     }
                     function.finished();
                     break;
-                case ",": expectArgument = true; break;
+                case ",":
+                    if(function.isFinished()) {
+                        syntaxError(ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
+                    }
+                    expectArgument = true;
+                    break;
                 default:
                     syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
             }

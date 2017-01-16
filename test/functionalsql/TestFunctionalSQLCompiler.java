@@ -13,6 +13,14 @@ public class TestFunctionalSQLCompiler {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
+    public void testFunctionHasTooManyArguments() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(FunctionalSQLCompiler.ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a like(c, 1, 2)");
+    }
+
+    @Test
     public void testUnexpectedEndOfFunction1() throws Exception {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION);
