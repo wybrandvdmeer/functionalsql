@@ -245,12 +245,7 @@ public class FunctionalSQLCompiler {
     }
 
     private String getFSNameForFunction(Function function) {
-        for(Map.Entry<String, Class<? extends Function>> entry : functions.entrySet()) {
-            if(entry.getValue() == function.getClass()) {
-                return entry.getKey();
-            }
-        }
-        return null;
+        return functions.entrySet().stream().filter(e -> e.getValue() == function.getClass()).findFirst().map(Map.Entry::getKey).get();
     }
 
     private boolean isNull(String s) {
