@@ -1,8 +1,6 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
-import functionalsql.FunctionalSQLCompiler;
-import functionalsql.Statement;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
@@ -32,34 +30,34 @@ public class Report extends Function {
     }
 
     public void execute() throws Exception {
-        if (!statement.isVirginSelectClause()) {
-            compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.selectClause);
+        if (!getCompiler().getStatement().isVirginSelectClause()) {
+            getCompiler().syntaxError(ERR_SELECT_ALREADY_DEFINED, getCompiler().getStatement().selectClause);
         }
 
         /* If anything else, then it is a program error.
         */
         assert ("SUM".equals(function) || "MAX".equals(function) || "MIN".equals(function));
 
-        statement.selectClause = "SELECT";
+        getCompiler().getStatement().selectClause = "SELECT";
 
         if (columns.size() > 0) {
-            statement.groupByClause = "GROUP BY";
+            getCompiler().getStatement().groupByClause = "GROUP BY";
         }
 
         /* Expand the select and group clause.
         */
         for (int idx = 0; idx < columns.size(); idx++) {
-            statement.selectClause += " " + columns.get(idx);
-            statement.groupByClause += " " + columns.get(idx);
+            getCompiler().getStatement().selectClause += " " + columns.get(idx);
+            getCompiler().getStatement().groupByClause += " " + columns.get(idx);
 
             if (idx < columns.size() - 1) {
-                statement.selectClause += ",";
-                statement.groupByClause += ",";
+                getCompiler().getStatement().selectClause += ",";
+                getCompiler().getStatement().groupByClause += ",";
             }
         }
 
         /* Add the summation function to the select clause.
         */
-        statement.selectClause += String.format("%s %s( %s )", columns.size() > 0 ? "," : "", function, reportFunction);
+        getCompiler().getStatement().selectClause += String.format("%s %s( %s )", columns.size() > 0 ? "," : "", function, reportFunction);
     }
 }

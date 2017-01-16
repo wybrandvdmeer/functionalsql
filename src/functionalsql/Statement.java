@@ -25,7 +25,7 @@ public class Statement extends Function {
 
     public void processor1(String s) throws Exception {
         if(getTable() != null) {
-            compiler.syntaxError(ERR_UNKNOWN_FUNCTION, s);
+            getCompiler().syntaxError(ERR_UNKNOWN_FUNCTION, s);
         }
         setTable(s);
         fromClauses.add(String.format("%s %s", getTable(), getAlias(getTable())));
@@ -125,7 +125,7 @@ public class Statement extends Function {
 
     public String getAlias(String table, boolean forceNewAlias) throws Exception {
         if (table == null) {
-            compiler.syntaxError(ERR_NULL_TABLE);
+            getCompiler().syntaxError(ERR_NULL_TABLE);
         }
 
         String alias = null;
@@ -134,7 +134,7 @@ public class Statement extends Function {
             for (Map.Entry<String, String> entry : aliases.entrySet()) {
                 if (entry.getValue().equals(table)) {
                     if (alias != null) {
-                        compiler.syntaxError(ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION, table);
+                        getCompiler().syntaxError(ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION, table);
                     }
 
                     alias = entry.getKey();

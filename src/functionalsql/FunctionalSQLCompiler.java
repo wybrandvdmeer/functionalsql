@@ -176,7 +176,6 @@ public class FunctionalSQLCompiler {
 
         Statement s = new Statement();
         s.setCompiler(this);
-        s.setStatement(s);
         parse(s);
         s.execute();
 
@@ -351,7 +350,7 @@ public class FunctionalSQLCompiler {
                 arrowLine));
     }
 
-    private Statement getTopStatement() {
+    public Statement getStatement() {
         return statements.get(statements.size() - 1);
     }
 
@@ -409,7 +408,7 @@ public class FunctionalSQLCompiler {
             return value;
         }
 
-        return getTopStatement().getAlias(tableAndColumn[0]) + "." + tableAndColumn[1];
+        return getStatement().getAlias(tableAndColumn[0]) + "." + tableAndColumn[1];
     }
 
     public void checkTableOrColumnFormat(String s) throws Exception {
@@ -430,10 +429,9 @@ public class FunctionalSQLCompiler {
         Constructor<? extends Function> cons = function.getDeclaredConstructor();
         Function instance = cons.newInstance();
 
-        Statement statement = getTopStatement();
+        Statement statement = getStatement();
 
         instance.setCompiler(this);
-        instance.setStatement(statement);
 
         if (instance instanceof Join) {
             ((Join) instance).setDriveTable(driveTable, statement.getAlias(driveTable));

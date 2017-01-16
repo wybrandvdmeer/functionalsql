@@ -4,7 +4,8 @@ import functionalsql.Function;
 import functionalsql.FunctionalSQLCompiler;
 import functionalsql.Statement;
 
-import static functionalsql.FunctionalSQLCompiler.*;
+import static functionalsql.FunctionalSQLCompiler.ERR_JOIN_SHOULD_FOLLOW_JOIN;
+import static functionalsql.FunctionalSQLCompiler.ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT;
 
 /**
  Syntax:
@@ -63,7 +64,7 @@ public class Join extends Function {
         }
 
         if (aliasJoinTable == null) {
-            aliasJoinTable = statement.getAlias(joinTable);
+            aliasJoinTable = getCompiler().getStatement().getAlias(joinTable);
         }
 
         nextStep();
@@ -73,7 +74,7 @@ public class Join extends Function {
     */
     protected void processor1(String s) throws Exception {
 
-        compiler.checkTableOrColumnFormat(s);
+        getCompiler().checkTableOrColumnFormat(s);
         joinTable = s;
 
         /* To make sure that the order of the aliases (e.g. t0, t1, t2) follows the order of the table in the statement
@@ -81,7 +82,7 @@ public class Join extends Function {
         the table is now registrated in the alias administration.
         */
         if (aliasJoinTable == null) {
-            aliasJoinTable = statement.getAlias(joinTable);
+            aliasJoinTable = getCompiler().getStatement().getAlias(joinTable);
         }
 
         nextStep();
@@ -94,7 +95,7 @@ public class Join extends Function {
     /* FIND JOIN FIELD DRIVE TABLE OR ANOTHER JOIN.
     */
     protected void processor2(String s) throws Exception {
-        compiler.checkTableOrColumnFormat(s);
+        getCompiler().checkTableOrColumnFormat(s);
         joinFieldDriveTable = s;
         nextStep();
     }
@@ -106,7 +107,7 @@ public class Join extends Function {
     /* FIND JOIN FIELD JOIN TABLE OR ANOTHER JOIN.
     */
     protected void processor3(String s) throws Exception {
-        compiler.checkTableOrColumnFormat(s);
+        getCompiler().checkTableOrColumnFormat(s);
         joinFieldJoinTable = s;
         nextStep();
     }
@@ -114,7 +115,7 @@ public class Join extends Function {
     /* CHECK IF USER PROGRAMMED ANOTHER JOIN(S).
     */
     protected void processor4(String s) throws Exception {
-        compiler.syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, s);
+        getCompiler().syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, s);
     }
 
     public void execute() throws Exception {
@@ -142,8 +143,8 @@ public class Join extends Function {
 
         /* Expand the from clause with the join table if necessary.
         */
-        if(joinType == null && !statement.fromClauses.contains(fromClause)) {
-            statement.fromClauses.add(fromClause);
+        if(joinType == null && !getCompiler().getStatement().fromClauses.contains(fromClause)) {
+            getCompiler().getStatement().fromClauses.add(fromClause);
         }
 
         /* Syntax:
@@ -154,12 +155,12 @@ public class Join extends Function {
         RULE: If joinTableColumn is present, then also driveTableColumn is present.
         */
         if (joinColumnJoinTable == null) {
-            FunctionalSQLCompiler.CustomMapping c = compiler.getCustomMapping(driveTable, joinColumnDriveTable, joinTable);
+            FunctionalSQLCompiler.CustomMapping c = getCompiler().getCustomMapping(driveTable, joinColumnDriveTable, joinTable);
 
             /* If join fields are not programmed and there are also no cumstom mappings, then we cannot define the join.
             */
             if (c == null) {
-                compiler.syntaxError(ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT);
+                getCompiler().syntaxError(ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT);
             }
 
             joinColumnJoinTable = c.getColumn(joinTable);
@@ -181,7 +182,7 @@ public class Join extends Function {
         */
         String clause;
 
-        if (compiler.aliasToNumber(aliasDriveTable) < compiler.aliasToNumber(aliasJoinTable)) {
+        if (getCompiler().aliasToNumber(aliasDriveTable) < getCompiler().aliasToNumber(aliasJoinTable)) {
             clause = String.format("%s.%s = %s.%s",
                     aliasDriveTable,
                     joinColumnDriveTable,
@@ -198,8 +199,8 @@ public class Join extends Function {
         /* The inner join is depicted as SELECT ... FROM a, b WHERE ... (instead of using the JOIN keyword).
         */
         if(joinType == null) {
-            if (!statement.filterClauses.contains(clause)) {
-                statement.filterClauses.add(clause);
+            if (!getCompiler().getStatement().filterClauses.contains(clause)) {
+                getCompiler().getStatement().filterClauses.add(clause);
             }
         } else {
             String joinClause=null;
@@ -222,8 +223,8 @@ public class Join extends Function {
                     break;
             }
 
-            if (!statement.joinClauses.contains(joinClause)) {
-                statement.joinClauses.add(joinClause);
+            if (!getCompiler().getStatement().joinClauses.contains(joinClause)) {
+                getCompiler().getStatement().joinClauses.add(joinClause);
             }
         }
     }

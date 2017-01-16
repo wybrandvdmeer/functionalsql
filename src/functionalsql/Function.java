@@ -7,8 +7,7 @@ import java.util.Map;
 
 public abstract class Function {
 
-    protected FunctionalSQLCompiler compiler;
-    protected Statement statement;
+    private FunctionalSQLCompiler compiler;
 
     private Map<Integer, List<Class<? extends Function>>> expectedFunctionsPerStep = new HashMap<>();
 
@@ -25,12 +24,12 @@ public abstract class Function {
 
     private List<Integer> columnArguments = new ArrayList<>();
 
-    public void setStatement(Statement statement) {
-        this.statement = statement;
-    }
-
     public void setCompiler(FunctionalSQLCompiler compiler) {
         this.compiler = compiler;
+    }
+
+    public FunctionalSQLCompiler getCompiler() {
+        return compiler;
     }
 
     public boolean isColumn(int argument) {

@@ -1,10 +1,6 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
-import functionalsql.FunctionalSQLCompiler;
-import functionalsql.Statement;
-
-import java.util.List;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
@@ -25,9 +21,9 @@ public class Distinct extends Function {
         /* Check if argument is a table. If so, all fields of table are selected.
         Argument can also be a reference when the table was referred with the ref( table, occ ) function.
         */
-        if (statement.isTable(s)) {
-            s = statement.getAlias(s) + ".*";
-        } else if (statement.isAlias(s)) {
+        if (getCompiler().getStatement().isTable(s)) {
+            s = getCompiler().getStatement().getAlias(s) + ".*";
+        } else if (getCompiler().getStatement().isAlias(s)) {
             s = s + ".*";
         }
 
@@ -39,19 +35,19 @@ public class Distinct extends Function {
             return;
         }
 
-        if(!statement.isVirginSelectClause()) {
-            compiler.syntaxError(ERR_SELECT_ALREADY_DEFINED, statement.selectClause);
+        if(!getCompiler().getStatement().isVirginSelectClause()) {
+            getCompiler().syntaxError(ERR_SELECT_ALREADY_DEFINED, getCompiler().getStatement().selectClause);
         }
 
-        statement.selectClause = "SELECT DISTINCT";
+        getCompiler().getStatement().selectClause = "SELECT DISTINCT";
 
         /* Expand the select clause.
         */
         for (int idx = 0; idx < columns.size(); idx++) {
-            statement.selectClause += " " + columns.get(idx);
+            getCompiler().getStatement().selectClause += " " + columns.get(idx);
 
             if (idx < columns.size() - 1) {
-                statement.selectClause += ",";
+                getCompiler().getStatement().selectClause += ",";
             }
         }
     }

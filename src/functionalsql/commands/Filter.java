@@ -4,7 +4,9 @@ import functionalsql.Function;
 
 import java.util.List;
 
-import static functionalsql.FunctionalSQLCompiler.*;
+import static functionalsql.FunctionalSQLCompiler.ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER;
+import static functionalsql.FunctionalSQLCompiler.ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER;
+import static functionalsql.FunctionalSQLCompiler.ERR_VALUE_SHOULD_BE_QUOTED;
 
 /**
  * Syntax:
@@ -45,7 +47,7 @@ public class Filter extends Function {
     }
 
     protected void filter(String column, List<String> values, boolean inclusive) throws Exception {
-        if(values.size() >= 1 && !compiler.isQuoted(values.get(0)) &&
+        if(values.size() >= 1 && !getCompiler().isQuoted(values.get(0)) &&
                 ( values.get(0).equals("<") ||
                         values.get(0).equals(">") ||
                         values.get(0).equals("<=") ||
@@ -63,17 +65,17 @@ public class Filter extends Function {
         String operator = values.remove(0);
 
         if(values.size() == 0) {
-            compiler.syntaxError(ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER);
+            getCompiler().syntaxError(ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER);
         }
 
         if(values.size() > 1) {
-            compiler.syntaxError(ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER, values);
+            getCompiler().syntaxError(ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER, values);
         }
 
         String filterClause = String.format("%s %s %s", column, operator, values.get(0));
 
-        if (!statement.filterClauses.contains(filterClause)) {
-            statement.filterClauses.add(filterClause);
+        if (!getCompiler().getStatement().filterClauses.contains(filterClause)) {
+            getCompiler().getStatement().filterClauses.add(filterClause);
         }
     }
 
@@ -83,8 +85,8 @@ public class Filter extends Function {
         assert (values != null && values.size() > 0);
 
         for(String value : values) {
-            if(!compiler.isNummeric(value) && !compiler.isQuoted(value)) {
-                compiler.syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
+            if(!getCompiler().isNummeric(value) && !getCompiler().isQuoted(value)) {
+                getCompiler().syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
             }
         }
 
@@ -115,8 +117,8 @@ public class Filter extends Function {
             filterClause = String.format("%s%s", column, argumentListINFunction);
         }
 
-        if (!statement.filterClauses.contains(filterClause)) {
-            statement.filterClauses.add(filterClause);
+        if (!getCompiler().getStatement().filterClauses.contains(filterClause)) {
+            getCompiler().getStatement().filterClauses.add(filterClause);
         }
     }
 }

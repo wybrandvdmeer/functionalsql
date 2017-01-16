@@ -1,7 +1,6 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
-import functionalsql.FunctionalSQLCompiler;
 
 /**
  * Syntax: asc( fielda, table.fieldb , ... )
@@ -25,20 +24,20 @@ public class Order extends Function {
     }
 
     public void execute() throws Exception {
-        if (statement.orderByClause == null) {
-            statement.orderByClause = "ORDER BY";
+        if (getCompiler().getStatement().orderByClause == null) {
+            getCompiler().getStatement().orderByClause = "ORDER BY";
         }
 
         /* Expand the order by clause.
         */
         for (int idx = 0; idx < columns.size(); idx++) {
-            statement.orderByClause += " " + columns.get(idx);
+            getCompiler().getStatement().orderByClause += " " + columns.get(idx);
 
             if (idx < columns.size() - 1) {
-                statement.orderByClause += ",";
+                getCompiler().getStatement().orderByClause += ",";
             }
         }
 
-        statement.orderByClause += asc ? " ASC" : " DESC";
+        getCompiler().getStatement().orderByClause += asc ? " ASC" : " DESC";
     }
 }

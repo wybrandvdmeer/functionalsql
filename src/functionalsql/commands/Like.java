@@ -1,10 +1,8 @@
 package functionalsql.commands;
 
-
 import functionalsql.Function;
-import functionalsql.FunctionalSQLCompiler;
 
-import static functionalsql.FunctionalSQLCompiler.*;
+import static functionalsql.FunctionalSQLCompiler.ERR_VALUE_SHOULD_BE_QUOTED;
 
 /**
  * Syntax: like( column , 'aa%bb' )
@@ -29,10 +27,10 @@ public class Like extends Function {
     }
 
     public void execute() throws Exception {
-        if(!compiler.isNummeric(value) && !compiler.isQuoted(value)) {
-            compiler.syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
+        if(!getCompiler().isNummeric(value) && !getCompiler().isQuoted(value)) {
+            getCompiler().syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
         }
 
-        statement.filterClauses.add(String.format("%s LIKE %s", column, value));
+        getCompiler().getStatement().filterClauses.add(String.format("%s LIKE %s", column, value));
     }
 }

@@ -38,15 +38,15 @@ public class Id extends Filter {
         try {
             Integer.parseInt(value2 == null ? value1 : value2);
         } catch(NumberFormatException e) {
-            compiler.syntaxError(ERR_ARGUMENT_SHOULD_BE_NUMMERICAL, value2 == null ? value1 : value2);
+            getCompiler().syntaxError(ERR_ARGUMENT_SHOULD_BE_NUMMERICAL, value2 == null ? value1 : value2);
         }
 
         if(value2 != null) {
-            if(!statement.isTable(value1)) {
-                compiler.syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, value1);
+            if(!getCompiler().getStatement().isTable(value1)) {
+                getCompiler().syntaxError(ERR_REFERING_TO_A_NON_EXISTING_TABLE, value1);
             }
 
-            value1 = statement.getAlias(value1);
+            value1 = getCompiler().getStatement().getAlias(value1);
         }
 
         String column = value2 != null ? (value1 + ".id") : "id";
