@@ -13,6 +13,30 @@ public class TestFunctionalSQLCompiler {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
+    public void testUnexpectedEndOfFunction1() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION);
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a join(b");
+    }
+
+    @Test
+    public void testUnexpectedEndOfFunction2() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION);
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a join(b,");
+    }
+
+    @Test
+    public void testUnexpectedEndOfFunction3() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION);
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a join(b a");
+    }
+
+    @Test
     public void testQuotedTableNameStatement() throws Exception {
         expectedException.expect(Exception.class);
         expectedException.expectMessage("Wrong format table or column name: 'a'.");
@@ -241,7 +265,7 @@ public class TestFunctionalSQLCompiler {
             c.parse("a filter(1)");
             fail();
         } catch(Exception e) {
-            checkException(e, FunctionalSQLCompiler.UNEXPECTED_END_OF_FUNCTION);
+            checkException(e, FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION);
         }
 
         try {

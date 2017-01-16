@@ -20,7 +20,7 @@ public abstract class Function {
     private String table=null;
 
     private Integer step = 1;
-    private boolean finished = false, expectAnotherArgument = false, allowAllFunctionsAsArgument=false;
+    private boolean finished = false, expectArgument = false, allowAllFunctionsAsArgument=false;
 
     private List<Integer> columnArguments = new ArrayList<>();
 
@@ -37,7 +37,7 @@ public abstract class Function {
     }
 
     public void process(Function function) throws Exception {
-        expectAnotherArgument = false;
+        expectArgument = false;
         switch(step) {
             case 1: processor1(function); break;
             case 2: processor2(function); break;
@@ -47,7 +47,7 @@ public abstract class Function {
     }
 
     public void process(String languageElement) throws Exception{
-        expectAnotherArgument = false;
+        expectArgument = false;
         switch(step) {
             case 1: processor1(languageElement); break;
             case 2: processor2(languageElement); break;
@@ -119,11 +119,11 @@ public abstract class Function {
      */
     protected void nextMandatoryStep() {
         step++;
-        expectAnotherArgument = true;
+        expectArgument = true;
     }
 
-    public boolean expectAnotherArgument() {
-        return expectAnotherArgument && !finished;
+    public boolean expectArgument() {
+        return expectArgument && !finished;
     }
 
     public void addExpectedFunction(Integer step, Class<? extends Function> function) {

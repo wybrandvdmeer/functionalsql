@@ -23,8 +23,6 @@ public class FunctionalSQLCompiler {
 
     public static final String ERR_VALUE_SHOULD_BE_QUOTED = "Value (%s) should be quoted.";
 
-    public static final String ERR_UNEXPECTED_END_OF_STATEMENT = "Unexpected end of statement.";
-
     public static final String ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION = "If table has multiple instances, use the ref function (table=%s).";
 
     public static final String ERR_TABLE_REFERENCE_SHOULD_BE_EQUAL_OR_GREATER_THEN_ONE = "Reference should be equal or greater than one (%s).";
@@ -35,13 +33,11 @@ public class FunctionalSQLCompiler {
 
     public static final String ERR_TABLE_REFERENCE_SHOULD_BE_NUMMERICAL = "Table reference should be nummerical (%s).";
 
-    public static final String UNEXPECTED_END_OF_FUNCTION = "Unexpected end of function.";
+    public static final String ERR_UNEXPECTED_END_OF_FUNCTION = "Unexpected end of function.";
 
     public static final String ERR_JOIN_SHOULD_FOLLOW_JOIN = "A join can only be followed by another join. Instead found '%s'.";
 
     public static final String ERR_EXP_OPENING_BRACKET = "Expected opening bracket.";
-
-    public static final String ERR_EXP_COMMA = "Expected ',' instead of (%s).";
 
     public static final String ERR_MISSING_END_QUOTE = "Missing end quote.";
 
@@ -157,7 +153,7 @@ public class FunctionalSQLCompiler {
         originalStatement = statement;
         textElements = new ArrayList<>();
 
-        for (String s : new StatementChopper(statement + ")")) {
+        for (String s : new StatementChopper(statement)) {
             textElements.add(s);
         }
 
@@ -184,32 +180,33 @@ public class FunctionalSQLCompiler {
             }
         }
 
-        String languageElement=null;
+        String token;
+        boolean expectArgument=false;
 
         while (!function.isFinished()) {
-            languageElement = pop();
+            token = pop();
 
-            if(")".equals(languageElement)) {
+            if(token == null || ")".equals(token)) {
                 break;
             }
 
-            if("'".equals(languageElement)) {
-                languageElement = "'" + pop() + "'";
+            if("'".equals(token)) {
+                token = "'" + pop() + "'";
 
                 if(!"'".equals(pop())) {
                     syntaxError(ERR_MISSING_END_QUOTE);
                 }
             }
 
-            if(function.getStep() == 1 && ")".equals(languageElement)) {
+            if(function.getStep() == 1 && ")".equals(token)) {
                 syntaxError(ERR_FUNCTION_HAS_NO_ARGUMENTS);
             }
 
-            Class<? extends Function> functionClass = getFunction(languageElement);
+            Class<? extends Function> functionClass = getFunction(token);
 
             if(functionClass != null) {
                 if((!function.isFunctionExpected(functionClass) && !(functionClass == Ref.class && function.isColumn(function.getStep())))) {
-                    syntaxError(ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION, languageElement, getFSNameForFunction(function));
+                    syntaxError(ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION, token, getFSNameForFunction(function));
                 }
 
                 if(functionClass == Ref.class) {
@@ -223,10 +220,10 @@ public class FunctionalSQLCompiler {
                 }
             } else {
                 if (function.isColumn(function.getStep())) {
-                    languageElement = resolveColumn(languageElement);
+                    token = resolveColumn(token);
                 }
 
-                function.process(languageElement);
+                function.process(token);
             }
 
             /* Dont process comma when dealing with a statement.
@@ -235,20 +232,25 @@ public class FunctionalSQLCompiler {
                 continue;
             }
 
-            languageElement = pop();
+            token = pop();
 
-            if(")".equals(languageElement)) {
-                if(function.expectAnotherArgument()) {
-                    syntaxError(UNEXPECTED_END_OF_FUNCTION);
-                }
-                function.finished();
-            } else if(!",".equals(languageElement)) {
-                syntaxError(ERR_EXP_COMMA, languageElement);
+            expectArgument = false;
+
+            switch (token != null ? token : "") {
+                case ")":
+                    if(function.expectArgument()) {
+                        syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
+                    }
+                    function.finished();
+                    break;
+                case ",": expectArgument = true; break;
+                default:
+                    syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
             }
         }
 
-        if(!")".equals(languageElement)) {
-            syntaxError(ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
+        if(expectArgument) {
+            syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
         }
 
         if(function instanceof Statement) {
