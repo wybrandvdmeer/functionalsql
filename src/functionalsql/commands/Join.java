@@ -2,7 +2,6 @@ package functionalsql.commands;
 
 import functionalsql.Function;
 import functionalsql.FunctionalSQLCompiler;
-import functionalsql.Statement;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_JOIN_SHOULD_FOLLOW_JOIN;
 import static functionalsql.FunctionalSQLCompiler.ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT;
