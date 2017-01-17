@@ -553,7 +553,7 @@ public class FunctionalSQLCompiler {
         }
 
         public int hashCode() {
-            return 1;
+            return table1.hashCode() + column1.hashCode() + table2.hashCode() + column2.hashCode();
         }
 
         public String toString() {
