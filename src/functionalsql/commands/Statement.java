@@ -110,7 +110,7 @@ public class Statement extends Function {
         return joinClauses.size() == 0 && filterClauses.size() == 0;
     }
 
-    public void copyStatement(Statement statement) {
+    private void copyStatement(Statement statement) {
         this.selectClause = statement.selectClause;
         this.groupByClause = statement.groupByClause;
         this.orderByClause = statement.orderByClause;
@@ -155,13 +155,7 @@ public class Statement extends Function {
     }
 
     public String getDriveTableOfQuery() {
-        for (Map.Entry<String, String> entry : aliases.entrySet()) {
-            if (entry.getKey().equals("t0")) {
-                return entry.getValue();
-            }
-        }
-
-        return null;
+        return aliases.entrySet().stream().filter(e -> e.getKey().equals("t0")).map(Map.Entry::getValue).findFirst().orElse(null);
     }
 
     public boolean isAlias(String s) {
