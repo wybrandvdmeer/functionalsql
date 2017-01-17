@@ -47,7 +47,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testQuotedTableNameStatement() throws Exception {
         expectedException.expect(Exception.class);
-        expectedException.expectMessage("Wrong format table or column name: 'a'.");
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME, "'a'"));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.parse("'a'");
     }
@@ -55,7 +55,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testQuotedTableNameJoin() throws Exception {
         expectedException.expect(Exception.class);
-        expectedException.expectMessage("Wrong format table or column name: 'b'.");
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME, "'b'"));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.parse("a join('b')");
     }
@@ -63,7 +63,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testQuotedTableNameNewTable() throws Exception {
         expectedException.expect(Exception.class);
-        expectedException.expectMessage("Wrong format table or column name: 'a'.");
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME, "'a'"));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.parse("a join(newtable('a'))");
     }
@@ -71,7 +71,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testQuotedTableNamePrint() throws Exception {
         expectedException.expect(Exception.class);
-        expectedException.expectMessage("Wrong format table or column name: 'b'.");
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME, "'b'"));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.parse("a print('b')");
     }
@@ -149,14 +149,14 @@ public class TestFunctionalSQLCompiler {
             c.parse("a join(b, like(c))");
             fail();
         } catch(Exception e) {
-            checkException(e, "Cannot use function (like) as argument of function (join).");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION, "like", "join"));
         }
 
         try {
             c.parse("a print(asc(v1))");
             fail();
         } catch(Exception e) {
-            checkException(e, "Cannot use function (asc) as argument of function (print).");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION, "asc", "print"));
         }
     }
 
@@ -180,7 +180,7 @@ public class TestFunctionalSQLCompiler {
         try {
             c.parse("a like(v, a)");
         } catch(Exception e) {
-            checkException(e, "Value (a) should be quoted.");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_VALUE_SHOULD_BE_QUOTED, "a"));
         }
     }
 
@@ -244,7 +244,7 @@ public class TestFunctionalSQLCompiler {
             c.parse("a print(v1) distinct(v2)");
             fail();
         } catch(Exception e) {
-            checkException(e, "Select clause (SELECT v1) is already defined.");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED, "SELECT v1"));
         }
     }
 
@@ -326,28 +326,28 @@ public class TestFunctionalSQLCompiler {
             c.parse("a join(newtable(a)) print(ref(a,3))");
             fail();
         } catch( Exception e ) {
-            checkException(e, "Table reference (3) is not correct");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_TABLE_REFERENCE_IS_NOT_CORRECT, "3"));
         }
 
         try {
             c.parse("a join(newtable(a)) print(ref(z,3))");
             fail();
         } catch( Exception e ) {
-            checkException(e, "Refering to a non existing table (z)");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_REFERING_TO_A_NON_EXISTING_TABLE, "z"));
         }
 
         try {
             c.parse("a join(newtable(a)) print(ref(a,i))");
             fail();
         } catch( Exception e ) {
-            checkException(e, "Table reference should be nummerical (i)");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_TABLE_REFERENCE_SHOULD_BE_NUMMERICAL, "i"));
         }
 
         try {
             c.parse("a join(newtable(a)) print(ref(a,0))");
             fail();
         } catch( Exception e ) {
-            checkException(e, "Reference should be equal or greater than one (0)");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_TABLE_REFERENCE_SHOULD_BE_EQUAL_OR_GREATER_THEN_ONE, "0"));
         }
     }
 
@@ -396,15 +396,12 @@ public class TestFunctionalSQLCompiler {
             c.parse("a fulljoin(b)");
             fail();
         } catch(Exception e) {
-            checkException(e, "Unknown function (fulljoin).");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_UNKNOWN_FUNCTION, "fulljoin"));
         }
+    }
 
-        try {
-            c.renameFunction("fulljoin", "fjoin");
-            fail();
-        } catch(Exception e) {
-            checkException(e, "Unknown function (fulljoin).");
-        }
+    private String createError(String format, Object... args) {
+        return String.format(format, args);
     }
 
     private void checkException(Throwable e , String message) {
