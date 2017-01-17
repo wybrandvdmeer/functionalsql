@@ -402,12 +402,10 @@ public class FunctionalSQLCompiler {
         Constructor<? extends Function> cons = function.getDeclaredConstructor();
         Function instance = cons.newInstance();
 
-        Statement statement = getStatement();
-
         instance.setCompiler(this);
 
         if (instance instanceof Join) {
-            ((Join) instance).setDriveTable(driveTable, statement.getAlias(driveTable));
+            ((Join) instance).setDriveTable(driveTable, getStatement().getAlias(driveTable));
         }
 
         parse(instance);
