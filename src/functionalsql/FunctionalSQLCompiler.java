@@ -129,6 +129,10 @@ public class FunctionalSQLCompiler {
         return element;
     }
 
+    private String peek() {
+        return textElements.size() > 0 ? textElements.get(0) : null;
+    }
+
     public String parse(String statement) throws Exception {
         if (isNull(statement)) {
             throw new Exception("No statement.");
@@ -166,6 +170,10 @@ public class FunctionalSQLCompiler {
             }
         }
 
+        if(peek() != null && peek().equals(")")) {
+            syntaxError(ERR_FUNCTION_HAS_NO_ARGUMENTS);
+        }
+
         String token;
         boolean expectArgument=false;
 
@@ -182,10 +190,6 @@ public class FunctionalSQLCompiler {
                 if(!"'".equals(pop())) {
                     syntaxError(ERR_MISSING_END_QUOTE);
                 }
-            }
-
-            if(function.getStep() == 1 && ")".equals(token)) {
-                syntaxError(ERR_FUNCTION_HAS_NO_ARGUMENTS);
             }
 
             Class<? extends Function> functionClass = getFunction(token);

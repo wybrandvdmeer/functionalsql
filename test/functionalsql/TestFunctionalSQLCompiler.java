@@ -13,6 +13,75 @@ public class TestFunctionalSQLCompiler {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
+    public void testDefaultMappingHasNoEqualColumns() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.addCustomMapping("", "id1", "", "id2");
+    }
+
+    @Test
+    public void testFunctionHasNoArguments() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_FUNCTION_HAS_NO_ARGUMENTS));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a print()");
+    }
+
+    @Test
+    public void testNullField() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_NULL_FIELD));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a print( a.)");
+    }
+
+    @Test
+    public void testNullTable() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_NULL_TABLE));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a print( .field)");
+    }
+
+    @Test
+    public void testExpectedOpeningBracket() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_EXP_OPENING_BRACKET));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.addCustomMapping("a", "id", "b", "id");
+        c.addCustomMapping("b", "id", "c", "id");
+        c.parse("a join b");
+    }
+
+    @Test
+    public void testJoinShouldFollowJoin() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_JOIN_SHOULD_FOLLOW_JOIN, "id"));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.addCustomMapping("a", "id", "b", "id");
+        c.addCustomMapping("b", "id", "c", "id");
+        c.parse("a join(b, join(c), id, id)");
+    }
+
+    @Test
+    public void testIfTableHasMultipleInstancesUseRefFunction() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION, "a"));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.addCustomMapping("a", "id", "a", "id");
+        c.parse("a join(newtable(a)) print(a)");
+    }
+
+    @Test
+    public void testOnlyOneValueWhenUsingOperatorInFilter() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER, "[1, 2]"));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a filter(c, >, 1, 2)");
+    }
+
+    @Test
     public void testFunctionHasTooManyArguments() throws Exception {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(FunctionalSQLCompiler.ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
