@@ -51,7 +51,7 @@ public class FunctionalSQLCompiler {
 
     public static final String ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_RELATION_FOUND = "No join columns defined in statement and no relation found.";
 
-    public static final String ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS = "Default mapping has no equal columns.";
+    public static final String ERR_DEFAULT_RELATION_HAS_NO_EQUAL_COLUMNS = "Default relation has no equal columns.";
 
     public static final String ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS = "Function has to many arguments.";
 
@@ -111,10 +111,17 @@ public class FunctionalSQLCompiler {
     }
 
     public void addRelation(String table1, String column1, String table2, String column2) throws Exception {
-        Relation c = new Relation(table1, column1, table2, column2);
+        Relation relation = new Relation(table1, column1, table2, column2);
 
-        if (!relations.contains(c)) {
-            relations.add(c);
+        if (!relations.contains(relation)) {
+            relations.add(relation);
+        }
+    }
+
+    public void addDefaultRelation(String column1, String column2) throws Exception {
+        Relation relation = new Relation(column1, column2);
+        if(!relations.contains(relation)) {
+            relations.add(relation);
         }
     }
 
@@ -265,7 +272,7 @@ public class FunctionalSQLCompiler {
         Relation defaultRelation = null;
 
         for (Relation relation : relations) {
-            if (relation.isDefaultRelation()) {
+            if (relation.isDefault()) {
                 defaultRelation = relation;
             }
 

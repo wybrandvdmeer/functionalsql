@@ -15,9 +15,9 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testDefaultMappingHasNoEqualColumns() throws Exception {
         expectedException.expect(Exception.class);
-        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS));
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_DEFAULT_RELATION_HAS_NO_EQUAL_COLUMNS));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addRelation("", "id1", "", "id2");
+        c.addDefaultRelation("id1", "id2");
     }
 
     @Test

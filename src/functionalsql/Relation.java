@@ -1,25 +1,27 @@
 package functionalsql;
 
-import static functionalsql.FunctionalSQLCompiler.ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS;
+import static functionalsql.FunctionalSQLCompiler.ERR_DEFAULT_RELATION_HAS_NO_EQUAL_COLUMNS;
 
 public class Relation {
-    private String table1, table2, column1, column2;
+    final private String table1, table2, column1, column2;
+
+    public Relation(String column1, String column2) throws Exception {
+        this(null, column1, null, column2);
+    }
 
     public Relation(String table1, String column1, String table2, String column2) throws Exception {
-        this.table1 = table1;
+        this.table1 = table1 != null ? table1 : "";
         this.column1 = column1;
-        this.table2 = table2;
+        this.table2 = table2 != null ? table2 : "";
         this.column2 = column2;
 
-        assert (table1 != null && column1 != null && table2 != null && column2 != null);
-
-        if (table1.length() == 0 && table2.length() == 0 && !column1.equals(column2)) {
-            throw new Exception(ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS);
+        if (table1 == null && table2 == null && !column1.equals(column2)) {
+            throw new Exception(ERR_DEFAULT_RELATION_HAS_NO_EQUAL_COLUMNS);
         }
     }
 
-    public boolean isDefaultRelation() {
-        return table1.length() == 0 && table2.length() == 0 && column1.equals(column2);
+    public boolean isDefault() {
+        return table1 == null && table2 == null && column1.equals(column2);
     }
 
     public boolean matches(String table1, String column1, String table2) {
@@ -68,7 +70,7 @@ public class Relation {
     }
 
     public boolean defaultRelationMatches(String column) {
-        return isDefaultRelation() && column1.equals(column);
+        return isDefault() && column1.equals(column);
     }
 
     public boolean equals(Object other) {
@@ -92,4 +94,3 @@ public class Relation {
         return table1 + table2;
     }
 }
-
