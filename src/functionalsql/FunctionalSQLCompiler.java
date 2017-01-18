@@ -49,7 +49,7 @@ public class FunctionalSQLCompiler {
 
     public static final String ERR_SELECT_ALREADY_DEFINED = "Select clause (%s) is already defined.";
 
-    public static final String ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT = "No join columns defined in statement and no custom mapping found.";
+    public static final String ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_RELATION_FOUND = "No join columns defined in statement and no relation found.";
 
     public static final String ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS = "Default mapping has no equal columns.";
 
@@ -61,7 +61,7 @@ public class FunctionalSQLCompiler {
 
     private List<String> textElements;
 
-    private List<CustomMapping> customMappings = new ArrayList<CustomMapping>();
+    private List<Relation> relations = new ArrayList<Relation>();
 
     private String originalStatement;
     private int popCounter = 0;
@@ -110,11 +110,11 @@ public class FunctionalSQLCompiler {
         functions.put(name, function);
     }
 
-    public void addCustomMapping(String table1, String column1, String table2, String column2) throws Exception {
-        CustomMapping c = new CustomMapping(table1, column1, table2, column2);
+    public void addRelation(String table1, String column1, String table2, String column2) throws Exception {
+        Relation c = new Relation(table1, column1, table2, column2);
 
-        if (!customMappings.contains(c)) {
-            customMappings.add(c);
+        if (!relations.contains(c)) {
+            relations.add(c);
         }
     }
 
@@ -261,48 +261,28 @@ public class FunctionalSQLCompiler {
         return s == null || s.length() == 0;
     }
 
-    public CustomMapping getCustomMapping(String table1, String column1, String table2) {
-        CustomMapping defaultMapping = null;
+    public Relation getRelation(String table1, String column1, String table2) {
+        Relation defaultRelation = null;
 
-        for (CustomMapping c : customMappings) {
-            if (c.isDefaultMapping()) {
-                defaultMapping = c;
+        for (Relation relation : relations) {
+            if (relation.isDefaultRelation()) {
+                defaultRelation = relation;
             }
 
-            if (c.toString().indexOf(table1) >= 0) {
-                /* Mapping could be correct: check it precisly.
-                Note: check both ways because we have no knowlegde of how the mapping was added to the compiler
-                E.g. (table1|column1 , table2|column2) OR (table2|column2 , table1|column1)
-                */
-                if ((table1.equals(c.table1) && table2.equals(c.table2)) ||
-                        (table1.equals(c.table2) && table2.equals(c.table1))) {
-                    /* User can have only the drive column programmed and not the join column. If so, this column should be mentioned
-                    in the custom mapping.
-                    */
-                    if (column1 != null) {
-                        if (table1.equals(c.table1) && column1.equals(c.column1)) {
-                            return c;
-                        }
-
-                        if (table1.equals(c.table2) && column1.equals(c.column2)) {
-                            return c;
-                        }
-                    } else {
-                        return c;
-                    }
-                }
+            if(relation.matches(table1, column1, table2)) {
+                return relation;
             }
         }
 
-        /* Found no custom mapping. Check if we can return default mapping. RULE: Compile does not override programmed columns names.
+        /* Found no relation. Check if we can return the default relation. RULE: Compiler does not override programmed columns names.
         */
-        if (defaultMapping != null) {
+        if (defaultRelation != null) {
             if (column1 != null) {
-                if (defaultMapping.column1.equals(column1)) {
-                    return defaultMapping;
+                if (defaultRelation.defaultRelationMatches(column1)) {
+                    return defaultRelation;
                 }
             } else {
-                return defaultMapping;
+                return defaultRelation;
             }
         }
 
@@ -498,66 +478,6 @@ public class FunctionalSQLCompiler {
                     return false;
                 }
             };
-        }
-    }
-
-    public class CustomMapping {
-        private String table1, table2, column1, column2;
-
-        public CustomMapping(String table1, String column1, String table2, String column2) throws Exception {
-            this.table1 = table1;
-            this.column1 = column1;
-            this.table2 = table2;
-            this.column2 = column2;
-
-            assert (table1 != null && column1 != null && table2 != null && column2 != null);
-
-            if (table1.length() == 0 && table2.length() == 0 && !column1.equals(column2)) {
-                throw new Exception(ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS);
-            }
-        }
-
-        public boolean isDefaultMapping() {
-            return table1.length() == 0 && table2.length() == 0 && column1.equals(column2);
-        }
-
-        public String getColumn(String table) {
-            /* Mapping could be the default mapping.
-            */
-            if (table1.length() == 0) {
-                return column1;
-            }
-
-            if (table1.equals(table)) {
-                return column1;
-            }
-
-            if (table2.equals(table)) {
-                return column2;
-            }
-
-            return null;
-        }
-
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-
-            if (other instanceof CustomMapping) {
-                CustomMapping c = (CustomMapping) other;
-                return table1.equals(c.table1) && column1.equals(c.column1) && table2.equals(c.table2) && column2.equals(c.column2);
-            }
-
-            return false;
-        }
-
-        public int hashCode() {
-            return table1.hashCode() + column1.hashCode() + table2.hashCode() + column2.hashCode();
-        }
-
-        public String toString() {
-            return table1 + table2;
         }
     }
 }

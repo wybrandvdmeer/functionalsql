@@ -2,9 +2,10 @@ package functionalsql.commands;
 
 import functionalsql.Function;
 import functionalsql.FunctionalSQLCompiler;
+import functionalsql.Relation;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_JOIN_SHOULD_FOLLOW_JOIN;
-import static functionalsql.FunctionalSQLCompiler.ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT;
+import static functionalsql.FunctionalSQLCompiler.ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_RELATION_FOUND;
 
 /**
  Syntax:
@@ -154,22 +155,22 @@ public class Join extends Function {
         RULE: If joinTableColumn is present, then also driveTableColumn is present.
         */
         if (joinColumnJoinTable == null) {
-            FunctionalSQLCompiler.CustomMapping c = getCompiler().getCustomMapping(driveTable, joinColumnDriveTable, joinTable);
+            Relation relation = getCompiler().getRelation(driveTable, joinColumnDriveTable, joinTable);
 
             /* If join fields are not programmed and there are also no cumstom mappings, then we cannot define the join.
             */
-            if (c == null) {
-                getCompiler().syntaxError(ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT);
+            if (relation == null) {
+                getCompiler().syntaxError(ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_RELATION_FOUND);
             }
 
-            joinColumnJoinTable = c.getColumn(joinTable);
+            joinColumnJoinTable = relation.getColumn(joinTable);
 
             /* If joinFieldJoinTable should be null at this point, it is a program error.
             */
             assert (joinColumnJoinTable != null);
 
             if (joinColumnDriveTable == null) {
-                joinColumnDriveTable = c.getColumn(driveTable);
+                joinColumnDriveTable = relation.getColumn(driveTable);
             }
 
             /* If joinFieldDriveTable should be null at this point, it is a program error.

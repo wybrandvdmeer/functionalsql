@@ -17,7 +17,7 @@ public class TestFunctionalSQLCompiler {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_DEFAULT_MAPPING_HAS_NO_EQUAL_COLUMNS));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("", "id1", "", "id2");
+        c.addRelation("", "id1", "", "id2");
     }
 
     @Test
@@ -49,8 +49,8 @@ public class TestFunctionalSQLCompiler {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_EXP_OPENING_BRACKET));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "b", "id");
-        c.addCustomMapping("b", "id", "c", "id");
+        c.addRelation("a", "id", "b", "id");
+        c.addRelation("b", "id", "c", "id");
         c.parse("a join b");
     }
 
@@ -59,8 +59,8 @@ public class TestFunctionalSQLCompiler {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_JOIN_SHOULD_FOLLOW_JOIN, "id"));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "b", "id");
-        c.addCustomMapping("b", "id", "c", "id");
+        c.addRelation("a", "id", "b", "id");
+        c.addRelation("b", "id", "c", "id");
         c.parse("a join(b, join(c), id, id)");
     }
 
@@ -69,7 +69,7 @@ public class TestFunctionalSQLCompiler {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION, "a"));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "a", "id");
+        c.addRelation("a", "id", "a", "id");
         c.parse("a join(newtable(a)) print(a)");
     }
 
@@ -173,9 +173,9 @@ public class TestFunctionalSQLCompiler {
     public void testQuery() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
 
-        c.addCustomMapping("a", "id", "b", "id");
-        c.addCustomMapping("b", "id", "c", "id");
-        c.addCustomMapping("a", "id", "c", "id");
+        c.addRelation("a", "id", "b", "id");
+        c.addRelation("b", "id", "c", "id");
+        c.addRelation("a", "id", "c", "id");
 
         assertEquals("SELECT t0.field, t1.field, t3.field2, MAX( t3.field ) FROM a t0, b t1, c t2, c t3 WHERE t0.id = t1.id AND t0.id = t3.id AND t1.id = t2.id GROUP BY t0.field, t1.field, t3.field2",
              c.parse("(a) join(b, join(c)) join(newtable(c)) max(ref(c.field, 2), a.field, b.field, ref(c.field2, 2))"));
@@ -184,8 +184,8 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testNestedQuery() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "b", "id");
-        c.addCustomMapping("b", "id", "c", "id");
+        c.addRelation("a", "id", "b", "id");
+        c.addRelation("b", "id", "c", "id");
 
         assertEquals( "SELECT * FROM a t0, (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id) t1 WHERE t0.id = t1.id",
                 c.parse("a join((b join(c)), id, id )") );
@@ -201,17 +201,17 @@ public class TestFunctionalSQLCompiler {
             c.parse("a join(b) ");
             fail();
         } catch( Exception e ) {
-            checkException(e, FunctionalSQLCompiler.ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_CUSTOM_MAPPING_PRESENT);
+            checkException(e, FunctionalSQLCompiler.ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_RELATION_FOUND);
         }
 
-        c.addCustomMapping("a", "v_a", "b", "v_b");
+        c.addRelation("a", "v_a", "b", "v_b");
         assertEquals("SELECT * FROM a t0, b t1 WHERE t0.v_a = t1.v_b", c.parse( "a join(b) ") );
         assertEquals("SELECT * FROM a t0, b t1, c t2 WHERE t0.v_a = t1.v_b AND t0.v_a = t2.v_c", c.parse("a join(b) join(c, v_a, v_c)"));
 
-        c.addCustomMapping("a", "v_a", "c", "v_c");
+        c.addRelation("a", "v_a", "c", "v_c");
         assertEquals("SELECT * FROM a t0, b t1, c t2 WHERE t0.v_a = t1.v_b AND t0.v_a = t2.v_c", c.parse("a join(b) join(c)"));
 
-        c.addCustomMapping("b", "v_b", "c", "v_c");
+        c.addRelation("b", "v_b", "c", "v_c");
         assertEquals("SELECT * FROM a t0, b t1, c t2 WHERE t0.v_a = t1.v_b AND t1.v_b = t2.v_c", c.parse("a join(b, join(c))"));
 
         try {
@@ -235,7 +235,7 @@ public class TestFunctionalSQLCompiler {
 
         assertEquals( "SELECT v FROM a t0", c.parse("a print(v)"));
 
-        c.addCustomMapping("a", "v_a", "b", "v_b");
+        c.addRelation("a", "v_a", "b", "v_b");
 
         assertEquals( "SELECT t1.v FROM a t0, b t1 WHERE t0.v_a = t1.v_b", c.parse( "a join(b) print( b.v ) "));
     }
@@ -256,28 +256,28 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testGroup() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "b", "id");
+        c.addRelation("a", "id", "b", "id");
         assertEquals("SELECT field, t1.field FROM a t0, b t1 WHERE t0.id = t1.id GROUP BY field, t1.field", c.parse("a join(b) group(field, b.field)"));
     }
 
     @Test
     public void testAsc() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "v_a", "b", "v_b");
+        c.addRelation("a", "v_a", "b", "v_b");
         assertEquals("SELECT * FROM a t0 ORDER BY v1, v2 ASC", c.parse("a asc(v1, v2)"));
     }
 
     @Test
     public void testDesc() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "v_a", "b", "v_b");
+        c.addRelation("a", "v_a", "b", "v_b");
         assertEquals("SELECT * FROM a t0 ORDER BY v1, v2 DESC", c.parse("a desc(v1, v2)"));
     }
 
     @Test
     public void testSum() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "v_a", "b", "v_b");
+        c.addRelation("a", "v_a", "b", "v_b");
         assertEquals("SELECT SUM( 1 ) FROM a t0", c.parse("a sum(1)"));
         assertEquals("SELECT SUM( v ) FROM a t0", c.parse("a sum(v)"));
         assertEquals("SELECT v1, v2, SUM( 1 ) FROM a t0 GROUP BY v1, v2", c.parse("a sum(1, v1, v2)"));
@@ -286,7 +286,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testMax() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "v_a", "b", "v_b");
+        c.addRelation("a", "v_a", "b", "v_b");
         assertEquals("SELECT MAX( 1 ) FROM a t0", c.parse("a max(1)"));
         assertEquals("SELECT MAX( v ) FROM a t0", c.parse("a max(v)"));
         assertEquals("SELECT v1, v2, MAX( 1 ) FROM a t0 GROUP BY v1, v2", c.parse("a max(1, v1, v2)"));
@@ -295,7 +295,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testMin() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "v_a", "b", "v_b");
+        c.addRelation("a", "v_a", "b", "v_b");
         assertEquals("SELECT MIN( 1 ) FROM a t0", c.parse("a min(1)"));
         assertEquals("SELECT MIN( v ) FROM a t0", c.parse("a min(v)"));
         assertEquals("SELECT v1, v2, MIN( 1 ) FROM a t0 GROUP BY v1, v2", c.parse("a min(1, v1, v2)"));
@@ -304,7 +304,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testDistinct() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "v_a", "b", "v_b");
+        c.addRelation("a", "v_a", "b", "v_b");
         assertEquals("SELECT DISTINCT va, 1, vb FROM a t0", c.parse("a distinct(va, 1, vb)"));
         assertEquals("SELECT DISTINCT t0.* FROM a t0", c.parse("a distinct(a)"));
         assertEquals("SELECT DISTINCT a, b FROM table t0", c.parse("table distinct(a, b)"));
@@ -329,7 +329,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testFilter() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "va", "b", "vb");
+        c.addRelation("a", "va", "b", "vb");
 
         assertEquals("SELECT * FROM a t0 WHERE field = '1'", c.parse("a filter(field, '1')"));
         assertEquals("SELECT * FROM a t0 WHERE field = 1", c.parse("a filter(field, 1)"));
@@ -388,7 +388,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testRefAndNewTable() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "a", "id");
+        c.addRelation("a", "id", "a", "id");
         assertEquals("SELECT t1.* FROM a t0, a t1 WHERE t0.id = t1.id", c.parse("a join(newtable(a)) print(ref(a,2))"));
 
         try {
@@ -423,30 +423,30 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testInnerJoin() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "b", "id");
+        c.addRelation("a", "id", "b", "id");
         assertEquals("SELECT * FROM a t0 INNER JOIN b t1 ON t0.id = t1.id", c.parse("a innerjoin(b)"));
     }
 
     @Test
     public void testLeftJoin() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "b", "id");
+        c.addRelation("a", "id", "b", "id");
         assertEquals("SELECT * FROM a t0 LEFT JOIN b t1 ON t0.id = t1.id", c.parse("a leftjoin(b)"));
     }
 
     @Test
     public void testRightJoin() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "b", "id");
+        c.addRelation("a", "id", "b", "id");
         assertEquals("SELECT * FROM a t0 RIGHT JOIN b t1 ON t0.id = t1.id", c.parse("a rightjoin(b)"));
     }
 
     @Test
     public void testFullJoin() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.addCustomMapping("a", "id", "b", "id");
-        c.addCustomMapping("b", "id", "c", "id");
-        c.addCustomMapping("a", "id", "c", "id");
+        c.addRelation("a", "id", "b", "id");
+        c.addRelation("b", "id", "c", "id");
+        c.addRelation("a", "id", "c", "id");
         assertEquals("SELECT * FROM a t0 FULL JOIN b t1 ON t0.id = t1.id", c.parse("a fulljoin(b)"));
         assertEquals("SELECT * FROM a t0 FULL JOIN b t1 ON t0.id = t1.id LEFT JOIN c t2 ON t1.id = t2.id",
                 c.parse("a fulljoin(b, leftjoin(c))"));
@@ -458,7 +458,7 @@ public class TestFunctionalSQLCompiler {
     public void testRenameFunction() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.renameFunction("fulljoin", "fjoin");
-        c.addCustomMapping("a", "id", "b", "id");
+        c.addRelation("a", "id", "b", "id");
         assertEquals("SELECT * FROM a t0 FULL JOIN b t1 ON t0.id = t1.id", c.parse("a fjoin(b)"));
 
         try {
