@@ -1,8 +1,10 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
-import functionalsql.FunctionalSQLCompiler;
 import functionalsql.Relation;
+import functionalsql.consumer.Consumer;
+import functionalsql.consumer.FunctionConsumer;
+import functionalsql.consumer.TokenConsumer;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_JOIN_SHOULD_FOLLOW_JOIN;
 import static functionalsql.FunctionalSQLCompiler.ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_RELATION_FOUND;
@@ -34,11 +36,51 @@ public class Join extends Function {
     private JOIN_TYPE joinType=null;
 
     public Join() {
-        addExpectedFunction(1, NewTable.class);
-        addExpectedFunction(1, Statement.class);
-        addExpectedFunction(2, Join.class);
-        addExpectedFunction(3, Join.class);
-        addExpectedFunction(4, Join.class);
+        /* Function consumers.
+        */
+        build(1, new FunctionConsumer(this, function -> {
+            if(NewTable.class == function.getClass()) {
+                joinTable = function.getTable();
+                aliasJoinTable = ((NewTable)function).getTableAlias();
+            } else if(Statement.class == function.getClass()) {
+                joinTable = "(" + ((Statement)function).getSql() + ")";
+            }
+
+            if (aliasJoinTable == null) {
+                aliasJoinTable = getCompiler().getStatement().getAlias(joinTable);
+            }
+        }).add(NewTable.class).add(Statement.class).singleValue().mandatory());
+
+        Consumer consumerStep2 = new FunctionConsumer(this).add(Join.class).singleValue();
+        build(2, consumerStep2);
+        setNextStepForConsumer(consumerStep2, 4);
+
+        build(3, new FunctionConsumer(this).add(Join.class).singleValue());
+        build(4, new FunctionConsumer(this).add(Join.class));
+
+        /* Token consumers.
+        */
+        build(1, new TokenConsumer(this, token -> {
+            getCompiler().checkTableOrColumnFormat(token);
+            joinTable = token;
+
+            /* To make sure that the order of the aliases (e.g. t0, t1, t2) follows the order of the table in the statement
+            (e.g. 'a join(b, join( c ) )' becomes 'SELECT * FROM a t0, b t1, c t2' as opposed to '... FROM a t0, c t1, b t2'
+            the table is now registrated in the alias administration.
+            */
+            if (aliasJoinTable == null) {
+                aliasJoinTable = getCompiler().getStatement().getAlias(joinTable);
+            }
+        }).singleValue().mandatory());
+        build(2, new TokenConsumer(this, token -> {
+            getCompiler().checkTableOrColumnFormat(token);
+            joinFieldDriveTable = token;
+        }).singleValue());
+        build(3, new TokenConsumer(this, token -> {
+            getCompiler().checkTableOrColumnFormat(token);
+            joinFieldJoinTable = token;
+        }).singleValue());
+        build(4, new TokenConsumer(this, token ->  getCompiler().syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, token)));
     }
 
     public Join(JOIN_TYPE joinType) {
@@ -53,69 +95,6 @@ public class Join extends Function {
 
     public String getJoinTable() {
         return joinTable;
-    }
-
-    protected void processor1(Function function) throws Exception {
-        if(NewTable.class == function.getClass()) {
-            joinTable = function.getTable();
-            aliasJoinTable = ((NewTable)function).getTableAlias();
-        } else if(Statement.class == function.getClass()) {
-            joinTable = "(" + ((Statement)function).getSql() + ")";
-        }
-
-        if (aliasJoinTable == null) {
-            aliasJoinTable = getCompiler().getStatement().getAlias(joinTable);
-        }
-
-        nextStep();
-    }
-
-    /* Find table to which to join.
-    */
-    protected void processor1(String s) throws Exception {
-
-        getCompiler().checkTableOrColumnFormat(s);
-        joinTable = s;
-
-        /* To make sure that the order of the aliases (e.g. t0, t1, t2) follows the order of the table in the statement
-        (e.g. 'a join(b, join( c ) )' becomes 'SELECT * FROM a t0, b t1, c t2' as opposed to '... FROM a t0, c t1, b t2'
-        the table is now registrated in the alias administration.
-        */
-        if (aliasJoinTable == null) {
-            aliasJoinTable = getCompiler().getStatement().getAlias(joinTable);
-        }
-
-        nextStep();
-    }
-
-    protected void processor2(Function function) throws Exception {
-        nextStep(4);
-    }
-
-    /* FIND JOIN FIELD DRIVE TABLE OR ANOTHER JOIN.
-    */
-    protected void processor2(String s) throws Exception {
-        getCompiler().checkTableOrColumnFormat(s);
-        joinFieldDriveTable = s;
-        nextStep();
-    }
-
-    protected void processor3(Function function) throws Exception {
-        nextStep(4);
-    }
-
-    /* FIND JOIN FIELD JOIN TABLE OR ANOTHER JOIN.
-    */
-    protected void processor3(String s) throws Exception {
-        getCompiler().checkTableOrColumnFormat(s);
-        joinFieldJoinTable = s;
-        nextStep();
-    }
-
-    /* CHECK IF USER PROGRAMMED ANOTHER JOIN(S).
-    */
-    protected void processor4(String s) throws Exception {
-        getCompiler().syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, s);
     }
 
     public void execute() throws Exception {

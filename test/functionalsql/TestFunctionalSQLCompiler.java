@@ -13,6 +13,70 @@ public class TestFunctionalSQLCompiler {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
+    public void testUnexpectedEndOfDistinct() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a distinct()");
+    }
+
+    @Test
+    public void testUnexpectedEndOfNewTable() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a newtable()");
+    }
+
+    @Test
+    public void testUnexpectedEndOfRef() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a ref()");
+    }
+
+    @Test
+    public void testUnexpectedEndOfJoin() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a join()");
+    }
+
+    @Test
+    public void testUnexpectedEndOfFilter() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a filter()");
+    }
+
+    @Test
+    public void testUnexpectedEndOfSum() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a sum()");
+    }
+
+    @Test
+    public void testUnexpectedEndOfGroup() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a group()");
+    }
+
+    @Test
+    public void testUnexpectedEndOfFunction() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a filter(1)");
+    }
+
+    @Test
     public void testDefaultMappingHasNoEqualColumns() throws Exception {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_DEFAULT_RELATION_HAS_NO_EQUAL_COLUMNS));
@@ -21,11 +85,19 @@ public class TestFunctionalSQLCompiler {
     }
 
     @Test
-    public void testFunctionHasNoArguments() throws Exception {
+    public void testUnexpectedEndOfFunctionPrint() throws Exception {
         expectedException.expect(Exception.class);
-        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_FUNCTION_HAS_NO_ARGUMENTS));
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.parse("a print()");
+    }
+
+    @Test
+    public void testUnexpectedEndOfFunctionAsc() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a asc()");
     }
 
     @Test
@@ -194,7 +266,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testJoin() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-
+/*
         assertEquals( "SELECT * FROM a t0, b t1 WHERE t0.v_a = t1.v_b", c.parse( "a join(b, v_a, v_b ) ") );
 
         try {
@@ -213,9 +285,9 @@ public class TestFunctionalSQLCompiler {
 
         c.addRelation("b", "v_b", "c", "v_c");
         assertEquals("SELECT * FROM a t0, b t1, c t2 WHERE t0.v_a = t1.v_b AND t1.v_b = t2.v_c", c.parse("a join(b, join(c))"));
-
+*/
         try {
-            c.parse("a join(b, like(c))");
+            c.parse("a join(b, like(c, 'a%b'))");
             fail();
         } catch(Exception e) {
             checkException(e, createError(FunctionalSQLCompiler.ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION, "like", "join"));
@@ -337,13 +409,6 @@ public class TestFunctionalSQLCompiler {
         assertEquals("SELECT * FROM a t0 WHERE v IN ( 'a', 'b' )", c.parse("a filter(v, 'a', 'b')"));
         assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND v IN ( 'a', 'b' )", c.parse("a join(b) filter(v, 'a', 'b')"));
         assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND t1.v IN ( 'a', 'b' )", c.parse("a join(b) filter(b.v, 'a', 'b')"));
-
-        try {
-            c.parse("a filter(1)");
-            fail();
-        } catch(Exception e) {
-            checkException(e, FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION);
-        }
 
         try {
             c.parse("a filter(1, a)");

@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TokenConsumer;
 
 /**
  * Syntax:
@@ -18,26 +19,9 @@ public class FilterDate extends Function {
 
     public FilterDate() {
         argumentsTakesTableOrColumn(1);
-    }
-
-    /* Find column.
-    */
-    protected void processor1(String s) throws Exception {
-        column = s;
-        nextMandatoryStep();
-    }
-
-    /* Find first value. */
-    protected void processor2(String s) throws Exception {
-        value = s;
-        nextStep();
-    }
-
-    /* Find second value (between) or operator if provided.
-    */
-    protected void processor3(String s) throws Exception {
-        secondValueOrOperator = s;
-        finished();
+        build(1, new TokenConsumer(this, token -> column = token).singleValue());
+        build(2, new TokenConsumer(this, token -> value = token).singleValue());
+        build(3, new TokenConsumer(this, token -> secondValueOrOperator = token));
     }
 
     public void execute() throws Exception {

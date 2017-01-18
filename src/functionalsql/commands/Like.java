@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TokenConsumer;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_VALUE_SHOULD_BE_QUOTED;
 
@@ -10,20 +11,8 @@ import static functionalsql.FunctionalSQLCompiler.ERR_VALUE_SHOULD_BE_QUOTED;
 public class Like extends Function {
     public Like() {
         argumentsTakesTableOrColumn(1);
-    }
-
-    /* FIND FIELD ON WHICH TO FILTER.
-    */
-    protected void processor1(String s) throws Exception {
-        column = s;
-        nextMandatoryStep();
-    }
-
-    /* Process like pattern.
-    */
-    protected void processor2(String s) throws Exception {
-        value = s;
-        finished();
+        build(1, new TokenConsumer(this, token -> column = token).singleValue().mandatory());
+        build(2, new TokenConsumer(this, token -> value = token).singleValue().mandatory());
     }
 
     public void execute() throws Exception {

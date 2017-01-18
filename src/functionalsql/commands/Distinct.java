@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TokenConsumer;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
@@ -13,21 +14,19 @@ import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 public class Distinct extends Function {
     public Distinct() {
         argumentsTakesTableOrColumn(1);
-    }
 
-    /* FIND COLUMN(S) FOR THE DISTINCT.
-    */
-    protected void processor1(String s) throws Exception {
         /* Check if argument is a table. If so, all fields of table are selected.
         Argument can also be a reference when the table was referred with the ref( table, occ ) function.
         */
-        if (getCompiler().getStatement().isTable(s)) {
-            s = getCompiler().getStatement().getAlias(s) + ".*";
-        } else if (getCompiler().getStatement().isAlias(s)) {
-            s = s + ".*";
-        }
+        build(1, new TokenConsumer(this, token -> {
+            if (getCompiler().getStatement().isTable(token)) {
+                token = getCompiler().getStatement().getAlias(token) + ".*";
+            } else if (getCompiler().getStatement().isAlias(token)) {
+                token = token + ".*";
+            }
 
-        columns.add(s);
+            columns.add(token);
+        }).mandatory());
     }
 
     public void execute() throws Exception {

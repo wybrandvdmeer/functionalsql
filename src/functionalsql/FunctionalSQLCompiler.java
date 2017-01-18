@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
  */
 public class FunctionalSQLCompiler {
 
+    public static final String ERR_UNKNOWN_OPERATOR = "Unknown operator (%s).";
+
     public static final String ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION = "Cannot use function (%s) as argument of function (%s).";
 
     public static final String ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER = "Need a value to filter on when using operator in filter function.";
@@ -136,10 +138,6 @@ public class FunctionalSQLCompiler {
         return element;
     }
 
-    private String peek() {
-        return textElements.size() > 0 ? textElements.get(0) : null;
-    }
-
     public String parse(String statement) throws Exception {
         if (isNull(statement)) {
             throw new Exception("No statement.");
@@ -177,14 +175,10 @@ public class FunctionalSQLCompiler {
             }
         }
 
-        if(peek() != null && peek().equals(")")) {
-            syntaxError(ERR_FUNCTION_HAS_NO_ARGUMENTS);
-        }
 
         String token;
-        boolean expectArgument=false;
 
-        while (!function.isFinished()) {
+        do {
             token = pop();
 
             if(token == null || ")".equals(token)) {
@@ -202,7 +196,7 @@ public class FunctionalSQLCompiler {
             Class<? extends Function> functionClass = getFunction(token);
 
             if(functionClass != null) {
-                if((!function.isFunctionExpected(functionClass) && !(functionClass == Ref.class && function.isColumn(function.getStep())))) {
+                if(functionClass == Ref.class && !function.isColumn(function.getStep())) {
                     syntaxError(ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION, token, getFSNameForFunction(function));
                 }
 
@@ -229,29 +223,21 @@ public class FunctionalSQLCompiler {
                 continue;
             }
 
-            token = pop();
+            token = pop();  //Expect ',' or ')'.
 
-            expectArgument = false;
-
-            switch (token != null ? token : "") {
-                case ")":
-                    if(function.expectArgument()) {
-                        syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
-                    }
-                    function.finished();
-                    break;
+            switch(token != null ? token : "") {
                 case ",":
                     if(function.isFinished()) {
                         syntaxError(ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
                     }
-                    expectArgument = true;
                     break;
-                default:
-                    syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
-            }
-        }
+                case ")": break;
+                default: syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
 
-        if(expectArgument) {
+            }
+        } while(!")".equals(token));
+
+        if(function.expectArgument() || (token == null && !(function instanceof Statement))) {
             syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
         }
 
@@ -260,7 +246,7 @@ public class FunctionalSQLCompiler {
         }
     }
 
-    private String getFSNameForFunction(Function function) {
+    public String getFSNameForFunction(Function function) {
         return functions.entrySet().stream().filter(e -> e.getValue() == function.getClass()).findFirst().map(Map.Entry::getKey).get();
     }
 
@@ -353,7 +339,7 @@ public class FunctionalSQLCompiler {
     /** Column can be noted as table.column or just a column. In the first case function translates it into alias.column
      * When value is a nummerical (for instance in function sum(1)), then argument is left untouched.
     */
-    private String resolveColumn(String value) throws Exception {
+    public String resolveColumn(String value) throws Exception {
         String[] tableAndColumn = splitTableColumn(value);
 
         if (isNummeric(tableAndColumn[0])) {

@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TokenConsumer;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
@@ -11,12 +12,7 @@ import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 public class Group extends Function {
     public Group() {
         argumentsTakesTableOrColumn(1);
-    }
-
-    /* FIND COLUMN(S) FOR THE GROUP.
-    */
-    protected void processor1(String s) throws Exception {
-        columns.add(s);
+        build(1, new TokenConsumer(this, token -> columns.add(token)).mandatory());
     }
 
     public void execute() throws Exception {

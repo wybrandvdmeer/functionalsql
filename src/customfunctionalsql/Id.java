@@ -1,6 +1,8 @@
 package customfunctionalsql;
 
+import functionalsql.Function;
 import functionalsql.commands.Filter;
+import functionalsql.consumer.TokenConsumer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,23 +20,17 @@ import static functionalsql.FunctionalSQLCompiler.ERR_REFERING_TO_A_NON_EXISTING
  * id(value)
  * id(table, value)
  */
-public class Id extends Filter {
+public class Id extends Function {
 
-    String value1, value2;
+    private String value1, value2;
 
-    protected void processor1(String s) throws Exception {
-        value1 = s;
-        nextStep();
-    }
-
-    protected void processor2(String s) throws Exception {
-        value2 = s;
-        finished();
+    public Id() {
+        build(1, new TokenConsumer(this, token -> value1 = token).singleValue());
+        build(2, new TokenConsumer(this, token -> value2 = token).singleValue());
     }
 
     @Override
     public void execute() throws Exception {
-
         try {
             Integer.parseInt(value2 == null ? value1 : value2);
         } catch(NumberFormatException e) {
@@ -50,9 +46,11 @@ public class Id extends Filter {
         }
 
         String column = value2 != null ? (value1 + ".id") : "id";
-        List<String> values = new ArrayList<>();
-        values.add(value2 != null ? value2 : value1);
 
-        filter(column, values, true);
+        String filterClause = String.format("%s = %s", column, value2 != null ? value2 : value1);
+
+        if (!getCompiler().getStatement().filterClauses.contains(filterClause)) {
+            getCompiler().getStatement().filterClauses.add(filterClause);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TokenConsumer;
 
 /**
  * Syntax: asc( fielda, table.fieldb , ... )
@@ -11,16 +12,11 @@ public class Order extends Function {
 
     public Order() {
         argumentsTakesTableOrColumn(1);
+        build(1, new TokenConsumer(this, token -> columns.add(token)).mandatory());
     }
 
     protected void setDesc() {
         asc = false;
-    }
-
-    /* FIND COLUMN(S) FOR THE ORDER BY.
-    */
-    protected void processor1(String s) throws Exception {
-        columns.add(s);
     }
 
     public void execute() throws Exception {

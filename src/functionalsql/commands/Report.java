@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TokenConsumer;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
@@ -18,15 +19,9 @@ public class Report extends Function {
 
         argumentsTakesTableOrColumn(1);
         argumentsTakesTableOrColumn(2);
-    }
 
-    protected void processor1(String s) throws Exception {
-        reportFunction = s;
-        nextStep(); // User programmed group by columns for intstance sum( 1 , field1 , field2 ).
-    }
-
-    protected void processor2(String s) throws Exception {
-        columns.add(s);
+        build(1, new TokenConsumer(this, token -> reportFunction = token).singleValue().mandatory());
+        build(2, new TokenConsumer(this, token -> columns.add(token)));
     }
 
     public void execute() throws Exception {

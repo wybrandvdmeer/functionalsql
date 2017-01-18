@@ -1,5 +1,9 @@
 package functionalsql;
 
+import functionalsql.consumer.Consumer;
+import functionalsql.consumer.FunctionConsumer;
+import functionalsql.consumer.TokenConsumer;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,7 +13,8 @@ public abstract class Function {
 
     private FunctionalSQLCompiler compiler;
 
-    private Map<Integer, List<Class<? extends Function>>> expectedFunctionsPerStep = new HashMap<>();
+    private Map<Integer, List<Consumer>> consumersPerStep = new HashMap<>();
+    private Map<Consumer, Integer> nextStepForConsumer = new HashMap<>();
 
     /* Useful vars!!!!
     */
@@ -20,7 +25,6 @@ public abstract class Function {
     private String table=null;
 
     private Integer step = 1;
-    private boolean finished = false, expectArgument = false, allowAllFunctionsAsArgument=false;
 
     private List<Integer> columnArguments = new ArrayList<>();
 
@@ -36,48 +40,47 @@ public abstract class Function {
         return columnArguments.contains(argument);
     }
 
-    public void process(Function function) throws Exception {
-        expectArgument = false;
-        switch(step) {
-            case 1: processor1(function); break;
-            case 2: processor2(function); break;
-            case 3: processor3(function); break;
-            case 4: processor4(function); break;
+    public void build(Integer step, Consumer consumer) {
+        consumersPerStep.computeIfAbsent(step, v -> new ArrayList<>()).add(consumer);
+    }
+
+    protected void setNextStepForConsumer(Consumer consumer, Integer nextStep) {
+        nextStepForConsumer.put(consumer, nextStep);
+    }
+
+    private Consumer getConsumer(List<Consumer> consumers, Class<? extends Consumer> type) {
+        return consumers.stream().filter(c -> type.isInstance(c)).findAny().orElse(null);
+    }
+
+    public void process(Object token) throws Exception {
+        List<Consumer> consumers = consumersPerStep.get(step);
+        if(consumers == null) {
+            getCompiler().syntaxError(FunctionalSQLCompiler.ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
         }
-    }
 
-    public void process(String languageElement) throws Exception{
-        expectArgument = false;
-        switch(step) {
-            case 1: processor1(languageElement); break;
-            case 2: processor2(languageElement); break;
-            case 3: processor3(languageElement); break;
-            case 4: processor4(languageElement); break;
+        Consumer consumer;
+
+        if(token instanceof Function) {
+            if((consumer = getConsumer(consumers, FunctionConsumer.class)) == null) {
+                getCompiler().syntaxError(FunctionalSQLCompiler.ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION,
+                        getCompiler().getFSNameForFunction((Function)token),
+                        getCompiler().getFSNameForFunction(this));
+            }
+        } else if((consumer = getConsumer(consumers, TokenConsumer.class)) == null) {
+                getCompiler().syntaxError(FunctionalSQLCompiler.ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION,
+                        getCompiler().getFSNameForFunction((Function)token),
+                        getCompiler().getFSNameForFunction(this));
         }
-    }
 
-    protected void processor1(Function function) throws Exception {
-    }
+        consumer.consume(token);
 
-    protected void processor2(Function function) throws Exception {
-    }
+        if(consumer.isSingleValue()) {
+            step++;
+        }
 
-    protected void processor3(Function function) throws Exception {
-    }
-
-    protected void processor4(Function function) throws Exception {
-    }
-
-    protected void processor1(String languageElement) throws Exception {
-    }
-
-    protected void processor2(String languageElement) throws Exception {
-    }
-
-    protected void processor3(String languageElement) throws Exception {
-    }
-
-    protected void processor4(String languageElement) throws Exception {
+        if(nextStepForConsumer.containsKey(consumer)) {
+            step = nextStepForConsumer.get(consumer);
+        }
     }
 
     protected void argumentsTakesTableOrColumn(int argument) {
@@ -88,12 +91,22 @@ public abstract class Function {
         return step;
     }
 
-    protected void finished() {
-        finished = true;
+    protected boolean isFinished() {
+        return consumersPerStep.get(step) == null;
     }
 
-    protected boolean isFinished() {
-        return finished;
+    protected boolean expectArgument() {
+        if(isFinished()) {
+            return false;
+        }
+
+        for(Consumer consumer : consumersPerStep.get(step)) {
+            if(consumer.isMandatory() && !consumer.hasConsumed()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public String getTable() {
@@ -102,56 +115,6 @@ public abstract class Function {
 
     public void setTable(String table) {
         this.table = table;
-    }
-
-    /**
-     * When function wants to go to the next (optional!!) processing step, this method should be called.
-     */
-    protected void nextStep() {
-        step++;
-    }
-
-    protected void nextStep(int nextStep) {
-        step = nextStep;
-    }
-
-    /** When function wants to go to the next (mandatory!!) processing step, this method should be called.
-     */
-    protected void nextMandatoryStep() {
-        step++;
-        expectArgument = true;
-    }
-
-    public boolean expectArgument() {
-        return expectArgument && !finished;
-    }
-
-    public void addExpectedFunction(Integer step, Class<? extends Function> function) {
-        expectedFunctionsPerStep.computeIfAbsent(step, value -> new ArrayList<>()).add(function);
-    }
-
-    public void allowAllFunctionsAsArgument() {
-        allowAllFunctionsAsArgument = true;
-    }
-
-    public boolean isFunctionExpected(Class<? extends Function> functionClass) {
-
-        if(allowAllFunctionsAsArgument) {
-            return true;
-        }
-
-        List<Class<? extends Function>> expectedFunctions = expectedFunctionsPerStep.get(step);
-        if(expectedFunctions == null) {
-            return false;
-        }
-
-        for(Class<? extends Function> expectedClass : expectedFunctions) {
-            if(functionClass == expectedClass || expectedClass.isAssignableFrom(functionClass)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public abstract void execute() throws Exception;

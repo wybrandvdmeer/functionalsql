@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TokenConsumer;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
@@ -10,12 +11,7 @@ import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 public class Print extends Function {
     public Print() {
         argumentsTakesTableOrColumn(1);
-    }
-
-    /* FIND COLUMN WHICH TO PRINT.
-    */
-    protected void processor1(String s) throws Exception {
-        columns.add(s);
+        build(1, new TokenConsumer(this, token -> columns.add(token)).mandatory());
     }
 
     public void execute() throws Exception {

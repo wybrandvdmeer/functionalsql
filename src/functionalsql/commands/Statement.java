@@ -1,8 +1,14 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.FunctionConsumer;
+import functionalsql.consumer.TokenConsumer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Collections;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_IF_TABLE_HAS_MULTIPLE_INSTANCES_USE_REF_FUNCTION;
 import static functionalsql.FunctionalSQLCompiler.ERR_NULL_TABLE;
@@ -14,38 +20,39 @@ public class Statement extends Function {
     public String orderByClause;
     public List<String> fromClauses = new ArrayList<>();
     public List<String> joinClauses = new ArrayList<>();
-    public List<String> filterClauses = new ArrayList<String>();
-    public Map<String, String> aliases = new HashMap<>(); //alias, table
+    public List<String> filterClauses = new ArrayList<>();
+    public Map<String, String> aliases = new HashMap<>();
     private final static String VIRGIN_SELECT_CLAUSE="SELECT *";
 
     private String sql;
 
     public Statement() {
-        allowAllFunctionsAsArgument();
         argumentsTakesTableOrColumn(1);
-    }
 
-    public void processor1(String s) throws Exception {
-        if(getTable() != null) {
-            getCompiler().syntaxError(ERR_UNKNOWN_FUNCTION, s);
-        }
-        setTable(s);
-        fromClauses.add(String.format("%s %s", getTable(), getAlias(getTable())));
-    }
-
-    public void processor1(Function function) throws Exception {
-        if (function instanceof Statement) {
-            String nestedQuery = ((Statement) function).getSql();
-
-            if(isFullSelect()) {
-                copyStatement(((Statement)function));
-            } else {
-                fromClauses.add(String.format("(%s) %s", nestedQuery, getAlias(nestedQuery)));
+        build(1, new TokenConsumer(this, token -> {
+            if(getTable() != null) {
+                getCompiler().syntaxError(ERR_UNKNOWN_FUNCTION, token);
             }
-        }
+
+            setTable(token);
+            fromClauses.add(String.format("%s %s", getTable(), getAlias(getTable())));
+        }));
+
+        build(1, new FunctionConsumer(this,function -> {
+            if (function instanceof Statement) {
+                String nestedQuery = ((Statement) function).getSql();
+
+                if(isFullSelect()) {
+                    copyStatement(((Statement)function));
+                } else {
+                    fromClauses.add(String.format("(%s) %s", nestedQuery, getAlias(nestedQuery)));
+                }
+            }
+        }));
     }
 
     public void execute() throws Exception {
+
         sql = String.format("%s ", selectClause); // SELECT ...
 
         Collections.sort(fromClauses, (s1, s2) -> s1.toCharArray()[s1.toCharArray().length - 1] - s2.toCharArray()[s2.toCharArray().length - 1]);

@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TokenConsumer;
 
 import java.util.Map;
 
@@ -22,18 +23,9 @@ import static functionalsql.FunctionalSQLCompiler.*;
 public class Ref extends Function {
     private String reference = null;
 
-    /* FIND TABLE/COLUMN ON FOR WHICH TO FIND THE ALIAS.
-    */
-    protected void processor1(String s) throws Exception {
-        column = s;
-        nextMandatoryStep();
-    }
-
-    /* FIND THE REFERENCE.
-    */
-    protected void processor2(String s) throws Exception {
-        value = s;
-        finished();
+    public Ref() {
+        build(1, new TokenConsumer(this, token -> column = token).singleValue().mandatory());
+        build(2, new TokenConsumer(this, token -> value = token).singleValue().mandatory());
     }
 
     public void execute() throws Exception {

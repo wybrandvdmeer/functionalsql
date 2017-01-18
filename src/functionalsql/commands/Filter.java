@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TokenConsumer;
 
 import java.util.List;
 
@@ -22,24 +23,13 @@ public class Filter extends Function {
 
     public Filter() {
         argumentsTakesTableOrColumn(1);
+        build(1, new TokenConsumer(this, token -> column = token).singleValue().mandatory());
+        build(2, new TokenConsumer(this, token -> values.add(token)).mandatory());
     }
 
     public Filter(boolean inclusive) {
         this();
         this.inclusive = inclusive;
-    }
-
-    /* Find column on which to filter.
-    */
-    protected void processor1(String s) throws Exception {
-        column = s;
-        nextMandatoryStep();
-    }
-
-    /* Find values/operator on which to filter.
-    */
-    protected void processor2(String s) throws Exception {
-        values.add(s);
     }
 
     public void execute() throws Exception {
@@ -60,7 +50,7 @@ public class Filter extends Function {
         }
     }
 
-    protected void filterOnOperator(String column, List<String> values) throws Exception {
+    private void filterOnOperator(String column, List<String> values) throws Exception {
 
         String operator = values.remove(0);
 
@@ -79,7 +69,7 @@ public class Filter extends Function {
         }
     }
 
-    protected void filterOnValues(String column, List<String> values, boolean inclusive) throws Exception {
+    private void filterOnValues(String column, List<String> values, boolean inclusive) throws Exception {
         /* If list is null or has no values, it is a program error.
         */
         assert (values != null && values.size() > 0);
