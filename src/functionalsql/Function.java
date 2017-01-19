@@ -53,7 +53,7 @@ public abstract class Function {
                         getCompiler().getFSNameForFunction(this));
             }
         } else if((consumer = getConsumer(consumers, TokenConsumer.class)) == null) {
-            /* Assuming consumers are programmend, in this case the remaining consumer has to be a FunctionConsumer.
+            /* At this point there are consumers, so the remaining consumer has to be a FunctionConsumer.
             */
             getCompiler().syntaxError(FunctionalSQLCompiler.ERR_EXPECT_A_FUNCTION_CALL, token);
         }
