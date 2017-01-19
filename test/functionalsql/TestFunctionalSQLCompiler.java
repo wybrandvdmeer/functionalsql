@@ -282,7 +282,7 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testJoin() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-/*
+
         assertEquals( "SELECT * FROM a t0, b t1 WHERE t0.v_a = t1.v_b", c.parse( "a join(b, v_a, v_b ) ") );
 
         try {
@@ -301,7 +301,7 @@ public class TestFunctionalSQLCompiler {
 
         c.addRelation("b", "v_b", "c", "v_c");
         assertEquals("SELECT * FROM a t0, b t1, c t2 WHERE t0.v_a = t1.v_b AND t1.v_b = t2.v_c", c.parse("a join(b, join(c))"));
-*/
+
         try {
             c.parse("a join(b, like(c, 'a%b'))");
             fail();
