@@ -15,13 +15,13 @@ import static functionalsql.FunctionalSQLCompiler.*;
  Note:
  1> Reference is number which should equal or greater then 1.
 
- 2> The opposite equivalent of this function is the newtable function which can be used to add another instance of the same table to
+ 2> The opposite equivalent of this function is the newtable function which can be used to expect another instance of the same table to
  the query.
 
  3> Note: Ref can only called as an argument of an other function.
  */
 public class Ref extends Function {
-    private String reference = null;
+    private String reference = null, column, value;
 
     public Ref() {
         build(1, new TokenConsumer(this, token -> column = token).singleValue().mandatory());

@@ -3,6 +3,9 @@ package functionalsql.commands;
 import functionalsql.Function;
 import functionalsql.consumer.TokenConsumer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
 /**
@@ -11,6 +14,8 @@ import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
  */
 public class Report extends Function {
     private final String function;
+    private List<String> columns = new ArrayList<>();
+
 
     private String reportFunction = null;
 

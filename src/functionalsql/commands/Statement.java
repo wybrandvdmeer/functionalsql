@@ -24,18 +24,18 @@ public class Statement extends Function {
     private Map<String, String> aliases = new HashMap<>();
     private final static String VIRGIN_SELECT_CLAUSE="SELECT *";
 
-    private String sql;
+    private String sql, table;
 
     public Statement() {
         argumentsTakesTableOrColumn(1);
 
         build(1, new TokenConsumer(this, token -> {
-            if(getTable() != null) {
+            if(table != null) {
                 getCompiler().syntaxError(ERR_UNKNOWN_FUNCTION, token);
             }
 
-            setTable(token);
-            fromClauses.add(String.format("%s %s", getTable(), getAlias(getTable())));
+            table = token;
+            fromClauses.add(String.format("%s %s", table, getAlias(table)));
         }));
 
         build(1, new FunctionConsumer(this,function -> {

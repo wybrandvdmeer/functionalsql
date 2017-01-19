@@ -9,6 +9,9 @@ import static functionalsql.FunctionalSQLCompiler.ERR_VALUE_SHOULD_BE_QUOTED;
  * Syntax: like( column , 'aa%bb' )
  */
 public class Like extends Function {
+
+    private String column, value;
+
     public Like() {
         argumentsTakesTableOrColumn(1);
         build(1, new TokenConsumer(this, token -> column = token).singleValue().mandatory());

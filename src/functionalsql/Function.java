@@ -10,19 +10,10 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class Function {
-
     private FunctionalSQLCompiler compiler;
 
     private Map<Integer, List<Consumer>> consumersPerStep = new HashMap<>();
     private Map<Consumer, Integer> nextStepForConsumer = new HashMap<>();
-
-    /* Useful vars!!!!
-    */
-    protected List<String> columns = new ArrayList<>();
-    protected List<String> values = new ArrayList<>();
-    protected String column = null, value = null;
-
-    private String table=null;
 
     private Integer step = 1;
 
@@ -107,14 +98,6 @@ public abstract class Function {
         }
 
         return false;
-    }
-
-    public String getTable() {
-        return table;
-    }
-
-    public void setTable(String table) {
-        this.table = table;
     }
 
     public abstract void execute() throws Exception;

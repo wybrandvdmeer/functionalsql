@@ -3,15 +3,20 @@ package functionalsql.commands;
 import functionalsql.Function;
 import functionalsql.consumer.TokenConsumer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
 /**
  * Syntax:
  *  distinct-column( column, column , ... )
  *
- * Note: user can add columns and constants to the function in a random order.
+ * Note: user can expect columns and constants to the function in a random order.
  */
 public class Distinct extends Function {
+    private List<String> columns = new ArrayList<>();
+
     public Distinct() {
         argumentsTakesTableOrColumn(1);
 

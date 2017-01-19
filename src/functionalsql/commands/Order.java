@@ -3,6 +3,9 @@ package functionalsql.commands;
 import functionalsql.Function;
 import functionalsql.consumer.TokenConsumer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static functionalsql.FunctionalSQLCompiler.ERR_ORDER_BY_CLAUSE_ALREADY_DEFINED;
 
 /**
@@ -11,6 +14,8 @@ import static functionalsql.FunctionalSQLCompiler.ERR_ORDER_BY_CLAUSE_ALREADY_DE
  */
 public class Order extends Function {
     private boolean asc = true;
+    private List<String> columns = new ArrayList<>();
+
 
     public Order() {
         argumentsTakesTableOrColumn(1);

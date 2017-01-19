@@ -3,12 +3,17 @@ package functionalsql.commands;
 import functionalsql.Function;
 import functionalsql.consumer.TokenConsumer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
 /**
  * Syntax: print( column1 , column2 , ... )
  */
 public class Print extends Function {
+    private List<String> columns = new ArrayList<>();
+
     public Print() {
         argumentsTakesTableOrColumn(1);
         build(1, new TokenConsumer(this, token -> columns.add(token)).mandatory());

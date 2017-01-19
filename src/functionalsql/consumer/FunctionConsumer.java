@@ -18,7 +18,7 @@ public class FunctionConsumer extends Consumer<Function> {
         super(function, processor);
     }
 
-    public FunctionConsumer add(Class<? extends Function> functionClass) {
+    public FunctionConsumer expect(Class<? extends Function> functionClass) {
         functions.add(functionClass);
         return this;
     }

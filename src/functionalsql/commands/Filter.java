@@ -3,6 +3,7 @@ package functionalsql.commands;
 import functionalsql.Function;
 import functionalsql.consumer.TokenConsumer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_NEED_VALUE_WHEN_USING_OPERATOR_IN_FILTER;
@@ -20,6 +21,9 @@ import static functionalsql.FunctionalSQLCompiler.ERR_VALUE_SHOULD_BE_QUOTED;
  */
 public class Filter extends Function {
     private boolean inclusive = true;
+    private String column;
+    private List<String> values = new ArrayList<>();
+
 
     public Filter() {
         argumentsTakesTableOrColumn(1);

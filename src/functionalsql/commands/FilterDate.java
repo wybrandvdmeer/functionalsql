@@ -15,7 +15,7 @@ import functionalsql.consumer.TokenConsumer;
  *
  */
 public class FilterDate extends Function {
-    private String secondValueOrOperator = "=";
+    private String secondValueOrOperator = "=", column, value;
 
     public FilterDate() {
         argumentsTakesTableOrColumn(1);

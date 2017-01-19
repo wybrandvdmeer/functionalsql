@@ -3,6 +3,9 @@ package functionalsql.commands;
 import functionalsql.Function;
 import functionalsql.consumer.TokenConsumer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
 /**
@@ -10,6 +13,8 @@ import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
  *
  */
 public class Group extends Function {
+    private List<String> columns = new ArrayList<>();
+
     public Group() {
         argumentsTakesTableOrColumn(1);
         build(1, new TokenConsumer(this, token -> columns.add(token)).mandatory());

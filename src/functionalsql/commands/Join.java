@@ -35,12 +35,14 @@ public class Join extends Function {
 
     private JOIN_TYPE joinType=null;
 
+    private String table;
+
     public Join() {
         /* Function consumers.
         */
         build(1, new FunctionConsumer(this, function -> {
             if(NewTable.class == function.getClass()) {
-                joinTable = function.getTable();
+                joinTable = ((NewTable)function).getTable();
                 aliasJoinTable = ((NewTable)function).getTableAlias();
             } else if(Statement.class == function.getClass()) {
                 joinTable = "(" + ((Statement)function).getSql() + ")";
@@ -49,14 +51,14 @@ public class Join extends Function {
             if (aliasJoinTable == null) {
                 aliasJoinTable = getCompiler().getStatement().getAlias(joinTable);
             }
-        }).add(NewTable.class).add(Statement.class).singleValue().mandatory());
+        }).expect(NewTable.class).expect(Statement.class).singleValue().mandatory());
 
-        Consumer consumerStep2 = new FunctionConsumer(this).add(Join.class).singleValue();
+        Consumer consumerStep2 = new FunctionConsumer(this).expect(Join.class).singleValue();
         build(2, consumerStep2);
         setNextStepForConsumer(consumerStep2, 4);
 
-        build(3, new FunctionConsumer(this).add(Join.class).singleValue());
-        build(4, new FunctionConsumer(this).add(Join.class));
+        build(3, new FunctionConsumer(this).expect(Join.class).singleValue());
+        build(4, new FunctionConsumer(this).expect(Join.class));
 
         /* Token consumers.
         */
