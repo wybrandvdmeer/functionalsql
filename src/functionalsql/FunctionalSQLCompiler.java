@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  */
 public class FunctionalSQLCompiler {
 
-    public static final String ERR_UNKNOWN_OPERATOR = "Unknown operator (%s).";
+    public static final String ERR_ORDER_BY_CLAUSE_ALREADY_DEFINED = "OrderBy clause already defined.";
 
     public static final String ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION = "Cannot use function (%s) as argument of function (%s).";
 

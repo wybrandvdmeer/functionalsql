@@ -20,6 +20,6 @@ public class Like extends Function {
             getCompiler().syntaxError(ERR_VALUE_SHOULD_BE_QUOTED, value);
         }
 
-        getCompiler().getStatement().filterClauses.add(String.format("%s LIKE %s", column, value));
+        getCompiler().getStatement().addFilterClause(String.format("%s LIKE %s", column, value));
     }
 }

@@ -3,6 +3,8 @@ package functionalsql.commands;
 import functionalsql.Function;
 import functionalsql.consumer.TokenConsumer;
 
+import static functionalsql.FunctionalSQLCompiler.ERR_ORDER_BY_CLAUSE_ALREADY_DEFINED;
+
 /**
  * Syntax: asc( fielda, table.fieldb , ... )
  *
@@ -20,20 +22,21 @@ public class Order extends Function {
     }
 
     public void execute() throws Exception {
-        if (getCompiler().getStatement().orderByClause == null) {
-            getCompiler().getStatement().orderByClause = "ORDER BY";
+
+        if (getCompiler().getStatement().getOrderByClause() != null) {
+            getCompiler().syntaxError(ERR_ORDER_BY_CLAUSE_ALREADY_DEFINED);
         }
 
-        /* Expand the order by clause.
-        */
+        String orderByClause = "ORDER BY";
+
         for (int idx = 0; idx < columns.size(); idx++) {
-            getCompiler().getStatement().orderByClause += " " + columns.get(idx);
+            orderByClause += " " + columns.get(idx);
 
             if (idx < columns.size() - 1) {
-                getCompiler().getStatement().orderByClause += ",";
+                orderByClause += ",";
             }
         }
 
-        getCompiler().getStatement().orderByClause += asc ? " ASC" : " DESC";
+        getCompiler().getStatement().setOrderByClause( orderByClause + (asc ? " ASC" : " DESC"));
     }
 }

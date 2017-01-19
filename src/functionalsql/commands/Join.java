@@ -120,10 +120,8 @@ public class Join extends Function {
 
         String fromClause = String.format("%s %s", joinTable, aliasJoinTable);
 
-        /* Expand the from clause with the join table if necessary.
-        */
-        if(joinType == null && !getCompiler().getStatement().fromClauses.contains(fromClause)) {
-            getCompiler().getStatement().fromClauses.add(fromClause);
+        if(joinType == null) {
+            getCompiler().getStatement().addFromClause(fromClause);
         }
 
         /* Syntax:
@@ -178,9 +176,7 @@ public class Join extends Function {
         /* The inner join is depicted as SELECT ... FROM a, b WHERE ... (instead of using the JOIN keyword).
         */
         if(joinType == null) {
-            if (!getCompiler().getStatement().filterClauses.contains(clause)) {
-                getCompiler().getStatement().filterClauses.add(clause);
-            }
+            getCompiler().getStatement().addFilterClause(clause);
         } else {
             String joinClause=null;
 
@@ -202,9 +198,7 @@ public class Join extends Function {
                     break;
             }
 
-            if (!getCompiler().getStatement().joinClauses.contains(joinClause)) {
-                getCompiler().getStatement().joinClauses.add(joinClause);
-            }
+            getCompiler().getStatement().addJoinClause(joinClause);
         }
     }
 }

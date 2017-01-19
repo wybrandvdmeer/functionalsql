@@ -35,18 +35,18 @@ public class Distinct extends Function {
         }
 
         if(!getCompiler().getStatement().isVirginSelectClause()) {
-            getCompiler().syntaxError(ERR_SELECT_ALREADY_DEFINED, getCompiler().getStatement().selectClause);
+            getCompiler().syntaxError(ERR_SELECT_ALREADY_DEFINED, getCompiler().getStatement().getSelectClause());
         }
 
-        getCompiler().getStatement().selectClause = "SELECT DISTINCT";
+        getCompiler().getStatement().setSelectClause("SELECT DISTINCT");
 
         /* Expand the select clause.
         */
         for (int idx = 0; idx < columns.size(); idx++) {
-            getCompiler().getStatement().selectClause += " " + columns.get(idx);
+            getCompiler().getStatement().setSelectClause(getCompiler().getStatement().getSelectClause() + " " + columns.get(idx));
 
             if (idx < columns.size() - 1) {
-                getCompiler().getStatement().selectClause += ",";
+                getCompiler().getStatement().setSelectClause(getCompiler().getStatement().getSelectClause() + ",");
             }
         }
     }

@@ -26,33 +26,32 @@ public class Report extends Function {
 
     public void execute() throws Exception {
         if (!getCompiler().getStatement().isVirginSelectClause()) {
-            getCompiler().syntaxError(ERR_SELECT_ALREADY_DEFINED, getCompiler().getStatement().selectClause);
+            getCompiler().syntaxError(ERR_SELECT_ALREADY_DEFINED, getCompiler().getStatement().getSelectClause());
         }
 
         /* If anything else, then it is a program error.
         */
         assert ("SUM".equals(function) || "MAX".equals(function) || "MIN".equals(function));
 
-        getCompiler().getStatement().selectClause = "SELECT";
+        String selectClause = "SELECT";
+        String groupByClause=null;
 
         if (columns.size() > 0) {
-            getCompiler().getStatement().groupByClause = "GROUP BY";
+             groupByClause = "GROUP BY";
         }
 
-        /* Expand the select and group clause.
-        */
         for (int idx = 0; idx < columns.size(); idx++) {
-            getCompiler().getStatement().selectClause += " " + columns.get(idx);
-            getCompiler().getStatement().groupByClause += " " + columns.get(idx);
+            selectClause += " " + columns.get(idx);
+            groupByClause += " " + columns.get(idx);
 
             if (idx < columns.size() - 1) {
-                getCompiler().getStatement().selectClause += ",";
-                getCompiler().getStatement().groupByClause += ",";
+                selectClause += ",";
+                groupByClause += ",";
             }
         }
 
-        /* Add the summation function to the select clause.
-        */
-        getCompiler().getStatement().selectClause += String.format("%s %s( %s )", columns.size() > 0 ? "," : "", function, reportFunction);
+        getCompiler().getStatement().setGroupByClause(groupByClause);
+        getCompiler().getStatement().setSelectClause(
+                selectClause + String.format("%s %s( %s )", columns.size() > 0 ? "," : "", function, reportFunction));
     }
 }

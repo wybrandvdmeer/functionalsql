@@ -56,7 +56,7 @@ public class Ref extends Function {
         int idx = 0;
         String alias = null;
 
-        for (Map.Entry<String, String> entry : getCompiler().getStatement().aliases.entrySet()) {
+        for (Map.Entry<String, String> entry : getCompiler().getStatement().getAliases().entrySet()) {
 
             if (!tableAndColumn[0].equals(entry.getValue())) {
                 continue;

@@ -34,10 +34,10 @@ public class FilterDate extends Function {
                 ">=".equals(secondValueOrOperator) ||
                 "<".equals(secondValueOrOperator) ||
                 ">".equals(secondValueOrOperator)) {
-            getCompiler().getStatement().filterClauses.add(String.format("%s %s '%s'", column, secondValueOrOperator, value));
+            getCompiler().getStatement().addFilterClause(String.format("%s %s '%s'", column, secondValueOrOperator, value));
         } else {
-            getCompiler().getStatement().filterClauses.add(String.format("%s >= '%s'", column, value));
-            getCompiler().getStatement().filterClauses.add(String.format("%s < '%s'", column, secondValueOrOperator));
+            getCompiler().getStatement().addFilterClause(String.format("%s >= '%s'", column, value));
+            getCompiler().getStatement().addFilterClause(String.format("%s < '%s'", column, secondValueOrOperator));
         }
     }
 }

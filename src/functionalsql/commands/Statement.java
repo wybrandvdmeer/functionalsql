@@ -15,13 +15,13 @@ import static functionalsql.FunctionalSQLCompiler.ERR_NULL_TABLE;
 import static functionalsql.FunctionalSQLCompiler.ERR_UNKNOWN_FUNCTION;
 
 public class Statement extends Function {
-    public String selectClause=VIRGIN_SELECT_CLAUSE;
-    public String groupByClause;
-    public String orderByClause;
-    public List<String> fromClauses = new ArrayList<>();
-    public List<String> joinClauses = new ArrayList<>();
-    public List<String> filterClauses = new ArrayList<>();
-    public Map<String, String> aliases = new HashMap<>();
+    private String selectClause=VIRGIN_SELECT_CLAUSE;
+    private String groupByClause;
+    private String orderByClause;
+    private List<String> fromClauses = new ArrayList<>();
+    private List<String> joinClauses = new ArrayList<>();
+    private List<String> filterClauses = new ArrayList<>();
+    private Map<String, String> aliases = new HashMap<>();
     private final static String VIRGIN_SELECT_CLAUSE="SELECT *";
 
     private String sql;
@@ -171,5 +171,47 @@ public class Statement extends Function {
 
     public boolean isTable(String s) {
         return aliases.values().contains(s);
+    }
+
+    public void addFilterClause(String clause) {
+        if(!filterClauses.contains(clause)) {
+            filterClauses.add(clause);
+        }
+    }
+
+    public void addFromClause(String clause) {
+        if(!fromClauses.contains(clause)) {
+            fromClauses.add(clause);
+        }
+    }
+
+    public void addJoinClause(String clause) {
+        if(!joinClauses.contains(clause)) {
+            joinClauses.add(clause);
+        }
+    }
+
+    public String getSelectClause() {
+        return selectClause;
+    }
+
+    public void setSelectClause(String selectClause) {
+        this.selectClause = selectClause;
+    }
+
+    public void setGroupByClause(String groupByClause) {
+        this.groupByClause = groupByClause;
+    }
+
+    public String getOrderByClause() {
+        return orderByClause;
+    }
+
+    public void setOrderByClause(String orderByClause) {
+        this.orderByClause = orderByClause;
+    }
+
+    public Map<String, String> getAliases() {
+        return aliases;
     }
 }

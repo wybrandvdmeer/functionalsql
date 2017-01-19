@@ -62,11 +62,7 @@ public class Filter extends Function {
             getCompiler().syntaxError(ERR_ONLY_ONE_VALUE_WHEN_USING_OPERATOR_IN_FILTER, values);
         }
 
-        String filterClause = String.format("%s %s %s", column, operator, values.get(0));
-
-        if (!getCompiler().getStatement().filterClauses.contains(filterClause)) {
-            getCompiler().getStatement().filterClauses.add(filterClause);
-        }
+        getCompiler().getStatement().addFilterClause(String.format("%s %s %s", column, operator, values.get(0)));
     }
 
     private void filterOnValues(String column, List<String> values, boolean inclusive) throws Exception {
@@ -107,8 +103,6 @@ public class Filter extends Function {
             filterClause = String.format("%s%s", column, argumentListINFunction);
         }
 
-        if (!getCompiler().getStatement().filterClauses.contains(filterClause)) {
-            getCompiler().getStatement().filterClauses.add(filterClause);
-        }
+        getCompiler().getStatement().addFilterClause(filterClause);
     }
 }

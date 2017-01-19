@@ -16,10 +16,10 @@ public class Print extends Function {
 
     public void execute() throws Exception {
         if (!getCompiler().getStatement().isVirginSelectClause()) {
-            getCompiler().syntaxError(ERR_SELECT_ALREADY_DEFINED, getCompiler().getStatement().selectClause);
+            getCompiler().syntaxError(ERR_SELECT_ALREADY_DEFINED, getCompiler().getStatement().getSelectClause());
         }
 
-        getCompiler().getStatement().selectClause = "SELECT";
+        String selectClause = "SELECT";
 
         /* Expand the select clause.
         */
@@ -35,11 +35,13 @@ public class Print extends Function {
                 column = column + ".*";
             }
 
-            getCompiler().getStatement().selectClause += " " + column;
+            selectClause += " " + column;
 
             if (idx < columns.size() - 1) {
-                getCompiler().getStatement().selectClause += ",";
+                selectClause += ",";
             }
         }
+
+        getCompiler().getStatement().setSelectClause(selectClause);
     }
 }
