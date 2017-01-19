@@ -49,8 +49,6 @@ public class Id extends Function {
 
         String filterClause = String.format("%s = %s", column, value2 != null ? value2 : value1);
 
-        if (!getCompiler().getStatement().filterClauses.contains(filterClause)) {
-            getCompiler().getStatement().filterClauses.add(filterClause);
-        }
+        getCompiler().getStatement().addFilterClause(filterClause);
     }
 }
