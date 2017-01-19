@@ -53,9 +53,9 @@ public abstract class Function {
                         getCompiler().getFSNameForFunction(this));
             }
         } else if((consumer = getConsumer(consumers, TokenConsumer.class)) == null) {
-                getCompiler().syntaxError(FunctionalSQLCompiler.ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION,
-                        getCompiler().getFSNameForFunction((Function)token),
-                        getCompiler().getFSNameForFunction(this));
+            /* Assuming consumers are programmend, in this case the remaining consumer has to be a FunctionConsumer.
+            */
+            getCompiler().syntaxError(FunctionalSQLCompiler.ERR_EXPECT_A_FUNCTION_CALL, token);
         }
 
         consumer.consume(token);
