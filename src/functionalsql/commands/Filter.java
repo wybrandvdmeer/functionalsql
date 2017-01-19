@@ -26,8 +26,8 @@ public class Filter extends Function {
     private List<String> values = new ArrayList<>();
 
     public Filter() {
-        build(1, new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
-        build(2, new TokenConsumer(this, token -> values.add(token)).mandatory());
+        build(new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
+        build(new TokenConsumer(this, token -> values.add(token)).mandatory());
     }
 
     public Filter(boolean inclusive) {

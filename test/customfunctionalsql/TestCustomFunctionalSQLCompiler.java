@@ -1,5 +1,6 @@
 package customfunctionalsql;
 
+import functionalsql.FunctionalSQLCompiler;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -18,14 +19,21 @@ public class TestCustomFunctionalSQLCompiler {
             c.parse("a id(b)");
             fail();
         } catch(Exception e ) {
-            checkException(e, "Argument (b) should be nummerical.");
+            checkException(e, createError(CustomFunctionalSQLCompiler.ERR_ARGUMENT_SHOULD_BE_NUMMERICAL, "b"));
         }
 
         try {
             c.parse("a id(table, 10)");
             fail();
         } catch(Exception e ) {
-            checkException(e, "Refering to a non existing table (table).");
+            checkException(e, createError(FunctionalSQLCompiler.ERR_REFERING_TO_A_NON_EXISTING_TABLE, "table"));
+        }
+
+        try {
+            c.parse("'a' id(table, 10)");
+            fail();
+        } catch(Exception e) {
+            checkException(e, createError(FunctionalSQLCompiler.ERR_WRONG_FORMAT_TABLE_OR_COLUMN_NAME, "'a'"));
         }
     }
 
@@ -33,5 +41,9 @@ public class TestCustomFunctionalSQLCompiler {
         if( e.getMessage().indexOf(message) < 0 ) {
             fail();
         }
+    }
+
+    private String createError(String format, Object... args) {
+        return String.format(format, args);
     }
 }

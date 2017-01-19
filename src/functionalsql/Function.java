@@ -9,13 +9,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 
 public abstract class Function {
     private FunctionalSQLCompiler compiler;
-    private Map<Integer, List<Consumer>> consumersPerStep = new HashMap<>();
-    private Map<Consumer, Integer> nextStepForConsumer = new HashMap<>();
+    private Map<Integer, List<Consumer>> consumersPerArgument = new HashMap<>();
+    private Map<Consumer, Integer> nextArgumentForConsumer = new HashMap<>();
 
-    private Integer step = 1;
+    private int argument = 0;
 
     public void setCompiler(FunctionalSQLCompiler compiler) {
         this.compiler = compiler;
@@ -26,19 +27,40 @@ public abstract class Function {
     }
 
     public boolean expectTableOrColumn() {
-        List<Consumer> consumers = consumersPerStep.get(step);
+        List<Consumer> consumers = consumersPerArgument.get(argument);
         if(consumers == null) {
             return false;
         }
         return getConsumer(consumers, TableOrColumnConsumer.class) != null;
     }
 
-    public void build(Integer step, Consumer consumer) {
-        consumersPerStep.computeIfAbsent(step, v -> new ArrayList<>()).add(consumer);
+    public void build(Consumer consumer) {
+        Integer step = consumersPerArgument.keySet().stream().max(Comparator.naturalOrder()).map(s -> s + 1).orElse(0);
+        consumersPerArgument.computeIfAbsent(step, v -> new ArrayList<>()).add(consumer);
+        validate(step);
+    }
+
+    public void build(Integer argument, Consumer consumer) {
+        consumersPerArgument.computeIfAbsent(argument, v -> new ArrayList<>()).add(consumer);
+        validate(argument);
+    }
+
+    private void validate(int argument) {
+        if(consumersPerArgument.get(argument).size() > 2) {
+            throw new RuntimeException("Only 2 consumers per argument allowed.");
+        }
+
+        if(consumersPerArgument.get(argument).size() == 2) {
+            List<Consumer> consumers = consumersPerArgument.get(argument);
+            if((consumers.get(0) instanceof TokenConsumer && consumers.get(1) instanceof TokenConsumer) ||
+               (consumers.get(0) instanceof FunctionConsumer && consumers.get(1) instanceof FunctionConsumer)) {
+                throw new RuntimeException("Cannot program 2 consumers of same type for one argument.");
+            }
+        }
     }
 
     protected void setNextStepForConsumer(Consumer consumer, Integer nextStep) {
-        nextStepForConsumer.put(consumer, nextStep);
+        nextArgumentForConsumer.put(consumer, nextStep);
     }
 
     private Consumer getConsumer(List<Consumer> consumers, Class<? extends Consumer> type) {
@@ -46,7 +68,7 @@ public abstract class Function {
     }
 
     public void process(Object token) throws Exception {
-        List<Consumer> consumers = consumersPerStep.get(step);
+        List<Consumer> consumers = consumersPerArgument.get(argument);
         if(consumers == null) {
             getCompiler().syntaxError(FunctionalSQLCompiler.ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
         }
@@ -68,16 +90,16 @@ public abstract class Function {
         consumer.consume(token);
 
         if(consumer.isSingleValue()) {
-            step++;
+            argument++;
         }
 
-        if(nextStepForConsumer.containsKey(consumer)) {
-            step = nextStepForConsumer.get(consumer);
+        if(nextArgumentForConsumer.containsKey(consumer)) {
+            argument = nextArgumentForConsumer.get(consumer);
         }
     }
 
     protected boolean isFinished() {
-        return consumersPerStep.get(step) == null;
+        return consumersPerArgument.get(argument) == null;
     }
 
     protected boolean expectArgument() {
@@ -85,7 +107,7 @@ public abstract class Function {
             return false;
         }
 
-        for(Consumer consumer : consumersPerStep.get(step)) {
+        for(Consumer consumer : consumersPerArgument.get(argument)) {
             if(consumer.isMandatory() && !consumer.hasConsumed()) {
                 return true;
             }

@@ -27,7 +27,7 @@ public class Statement extends Function {
     private String sql, table;
 
     public Statement() {
-        build(1, new TableOrColumnConsumer(this, token -> {
+        build(0, new TableOrColumnConsumer(this, token -> {
             if(table != null) {
                 getCompiler().syntaxError(ERR_UNKNOWN_FUNCTION, token);
             }
@@ -36,7 +36,7 @@ public class Statement extends Function {
             fromClauses.add(String.format("%s %s", table, getAlias(table)));
         }));
 
-        build(1, new FunctionConsumer(this,function -> {
+        build(0, new FunctionConsumer(this,function -> {
             if (function instanceof Statement) {
                 String nestedQuery = ((Statement) function).getSql();
 

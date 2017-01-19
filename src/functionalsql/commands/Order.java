@@ -18,7 +18,7 @@ public class Order extends Function {
 
 
     public Order() {
-        build(1, new TableOrColumnConsumer(this, token -> columns.add(token)).mandatory());
+        build(new TableOrColumnConsumer(this, token -> columns.add(token)).mandatory());
     }
 
     protected void setDesc() {

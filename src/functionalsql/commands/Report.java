@@ -21,8 +21,8 @@ public class Report extends Function {
     public Report(String function) {
         this.function = function;
 
-        build(1, new TableOrColumnConsumer(this, token -> reportFunction = token).singleValue().mandatory());
-        build(2, new TableOrColumnConsumer(this, token -> columns.add(token)));
+        build(new TableOrColumnConsumer(this, token -> reportFunction = token).singleValue().mandatory());
+        build(new TableOrColumnConsumer(this, token -> columns.add(token)));
     }
 
     public void execute() throws Exception {

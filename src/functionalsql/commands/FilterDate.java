@@ -19,9 +19,9 @@ public class FilterDate extends Function {
     private String secondValueOrOperator = "=", column, value;
 
     public FilterDate() {
-        build(1, new TableOrColumnConsumer(this, token -> column = token).singleValue());
-        build(2, new TokenConsumer(this, token -> value = token).singleValue());
-        build(3, new TokenConsumer(this, token -> secondValueOrOperator = token));
+        build(new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
+        build(new TokenConsumer(this, token -> value = token).singleValue().mandatory());
+        build(new TokenConsumer(this, token -> secondValueOrOperator = token));
     }
 
     public void execute() throws Exception {

@@ -21,6 +21,14 @@ public class TestFunctionalSQLCompiler {
     }
 
     @Test
+    public void testUnexpectedEndOfFilterDate() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a filterdate()");
+    }
+
+    @Test
     public void testUnexpectedEndOfDistinct() throws Exception {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));

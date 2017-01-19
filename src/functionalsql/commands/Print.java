@@ -15,7 +15,7 @@ public class Print extends Function {
     private List<String> columns = new ArrayList<>();
 
     public Print() {
-        build(1, new TableOrColumnConsumer(this, token -> columns.add(token)).mandatory());
+        build(new TableOrColumnConsumer(this, token -> columns.add(token)).mandatory());
     }
 
     public void execute() throws Exception {

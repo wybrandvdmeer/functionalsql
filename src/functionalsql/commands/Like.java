@@ -14,8 +14,8 @@ public class Like extends Function {
     private String column, value;
 
     public Like() {
-        build(1, new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
-        build(2, new TokenConsumer(this, token -> value = token).singleValue().mandatory());
+        build(new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
+        build(new TokenConsumer(this, token -> value = token).singleValue().mandatory());
     }
 
     public void execute() throws Exception {

@@ -21,7 +21,7 @@ public class Distinct extends Function {
         /* Check if argument is a table. If so, all fields of table are selected.
         Argument can also be a reference when the table was referred with the ref( table, occ ) function.
         */
-        build(1, new TableOrColumnConsumer(this, token -> {
+        build(new TableOrColumnConsumer(this, token -> {
             if (getCompiler().getStatement().isTable(token)) {
                 token = getCompiler().getStatement().getAlias(token) + ".*";
             } else if (getCompiler().getStatement().isAlias(token)) {

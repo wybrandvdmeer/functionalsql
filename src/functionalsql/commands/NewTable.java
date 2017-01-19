@@ -12,7 +12,7 @@ public class NewTable extends Function {
     private String table, alias;
 
     public NewTable() {
-        build(1, new TableOrColumnConsumer(this, token -> table = token).singleValue().mandatory());
+        build(new TableOrColumnConsumer(this, token -> table = token).singleValue().mandatory());
     }
 
     public void execute() throws Exception {

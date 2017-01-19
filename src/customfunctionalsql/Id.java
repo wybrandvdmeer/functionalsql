@@ -2,6 +2,7 @@ package customfunctionalsql;
 
 import functionalsql.Function;
 import functionalsql.commands.Filter;
+import functionalsql.consumer.TableOrColumnConsumer;
 import functionalsql.consumer.TokenConsumer;
 
 import java.util.ArrayList;
@@ -25,8 +26,8 @@ public class Id extends Function {
     private String value1, value2;
 
     public Id() {
-        build(1, new TokenConsumer(this, token -> value1 = token).singleValue());
-        build(2, new TokenConsumer(this, token -> value2 = token).singleValue());
+        build(new TableOrColumnConsumer(this, token -> value1 = token).singleValue());
+        build(new TokenConsumer(this, token -> value2 = token).singleValue());
     }
 
     @Override

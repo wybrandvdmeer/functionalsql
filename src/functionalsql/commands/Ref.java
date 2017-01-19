@@ -24,8 +24,8 @@ public class Ref extends Function {
     private String reference = null, column, value;
 
     public Ref() {
-        build(1, new TokenConsumer(this, token -> column = token).singleValue().mandatory());
-        build(2, new TokenConsumer(this, token -> value = token).singleValue().mandatory());
+        build(new TokenConsumer(this, token -> column = token).singleValue().mandatory());
+        build(new TokenConsumer(this, token -> value = token).singleValue().mandatory());
     }
 
     public void execute() throws Exception {

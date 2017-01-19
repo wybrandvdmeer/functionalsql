@@ -40,7 +40,7 @@ public class Join extends Function {
     public Join() {
         /* Function consumers.
         */
-        build(1, new FunctionConsumer(this, function -> {
+        build(0, new FunctionConsumer(this, function -> {
             if(NewTable.class == function.getClass()) {
                 joinTable = ((NewTable)function).getTable();
                 aliasJoinTable = ((NewTable)function).getTableAlias();
@@ -54,15 +54,15 @@ public class Join extends Function {
         }).expect(NewTable.class).expect(Statement.class).singleValue().mandatory());
 
         Consumer consumerStep2 = new FunctionConsumer(this).expect(Join.class).singleValue();
-        build(2, consumerStep2);
-        setNextStepForConsumer(consumerStep2, 4);
+        build(1, consumerStep2);
+        setNextStepForConsumer(consumerStep2, 3);
 
-        build(3, new FunctionConsumer(this).expect(Join.class).singleValue());
-        build(4, new FunctionConsumer(this).expect(Join.class));
+        build(2, new FunctionConsumer(this).expect(Join.class).singleValue());
+        build(3, new FunctionConsumer(this).expect(Join.class));
 
         /* Token consumers.
         */
-        build(1, new TokenConsumer(this, token -> {
+        build(0, new TokenConsumer(this, token -> {
             getCompiler().checkTableOrColumnFormat(token);
             joinTable = token;
 
@@ -74,15 +74,15 @@ public class Join extends Function {
                 aliasJoinTable = getCompiler().getStatement().getAlias(joinTable);
             }
         }).singleValue().mandatory());
-        build(2, new TokenConsumer(this, token -> {
+        build(1, new TokenConsumer(this, token -> {
             getCompiler().checkTableOrColumnFormat(token);
             joinFieldDriveTable = token;
         }).singleValue());
-        build(3, new TokenConsumer(this, token -> {
+        build(2, new TokenConsumer(this, token -> {
             getCompiler().checkTableOrColumnFormat(token);
             joinFieldJoinTable = token;
         }).singleValue());
-        build(4, new TokenConsumer(this, token ->  getCompiler().syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, token)));
+        build(3, new TokenConsumer(this, token ->  getCompiler().syntaxError(ERR_JOIN_SHOULD_FOLLOW_JOIN, token)));
     }
 
     public Join(JOIN_TYPE joinType) {
