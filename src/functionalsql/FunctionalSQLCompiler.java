@@ -95,49 +95,6 @@ public class FunctionalSQLCompiler {
         functions.put("ref", Ref.class);
     }
 
-    public Class<? extends Function> getFunction(String function) {
-        return functions.get(function);
-    }
-
-    public void renameFunction(String existingFunction, String newFunction) throws Exception {
-        Class<? extends Function> function = functions.get(existingFunction);
-        if(function == null) {
-            syntaxError(ERR_UNKNOWN_FUNCTION, existingFunction);
-        }
-        functions.remove(existingFunction);
-        functions.put(newFunction, function);
-    }
-
-    public void addCustomFunction(String name, Class<? extends Function> function) {
-        functions.put(name, function);
-    }
-
-    public void addRelation(String table1, String column1, String table2, String column2) throws Exception {
-        Relation relation = new Relation(table1, column1, table2, column2);
-
-        if (!relations.contains(relation)) {
-            relations.add(relation);
-        }
-    }
-
-    public void addDefaultRelation(String column1, String column2) throws Exception {
-        Relation relation = new Relation(column1, column2);
-        if(!relations.contains(relation)) {
-            relations.add(relation);
-        }
-    }
-
-    private String pop() {
-        if (textElements.size() == 0) {
-            return null;
-        }
-
-        String element = textElements.get(0);
-        textElements.remove(0);
-        popCounter++;
-        return element;
-    }
-
     public String parse(String statement) throws Exception {
         if (isNull(statement)) {
             throw new Exception("No statement.");
@@ -174,7 +131,6 @@ public class FunctionalSQLCompiler {
                 syntaxError(ERR_EXP_OPENING_BRACKET);
             }
         }
-
 
         String token;
 
@@ -246,8 +202,51 @@ public class FunctionalSQLCompiler {
         }
     }
 
+    private String pop() {
+        if (textElements.size() == 0) {
+            return null;
+        }
+
+        String element = textElements.get(0);
+        textElements.remove(0);
+        popCounter++;
+        return element;
+    }
+
     public String getFSNameForFunction(Function function) {
         return functions.entrySet().stream().filter(e -> e.getValue() == function.getClass()).findFirst().map(Map.Entry::getKey).get();
+    }
+
+    public Class<? extends Function> getFunction(String function) {
+        return functions.get(function);
+    }
+
+    public void renameFunction(String existingFunction, String newFunction) throws Exception {
+        Class<? extends Function> function = functions.get(existingFunction);
+        if(function == null) {
+            syntaxError(ERR_UNKNOWN_FUNCTION, existingFunction);
+        }
+        functions.remove(existingFunction);
+        functions.put(newFunction, function);
+    }
+
+    public void addCustomFunction(String name, Class<? extends Function> function) {
+        functions.put(name, function);
+    }
+
+    public void addRelation(String table1, String column1, String table2, String column2) throws Exception {
+        Relation relation = new Relation(table1, column1, table2, column2);
+
+        if (!relations.contains(relation)) {
+            relations.add(relation);
+        }
+    }
+
+    public void addDefaultRelation(String column1, String column2) throws Exception {
+        Relation relation = new Relation(column1, column2);
+        if(!relations.contains(relation)) {
+            relations.add(relation);
+        }
     }
 
     private boolean isNull(String s) {

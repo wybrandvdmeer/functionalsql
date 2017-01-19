@@ -34,35 +34,6 @@ public abstract class Function {
         return getConsumer(consumers, TableOrColumnConsumer.class) != null;
     }
 
-    public void build(Consumer consumer) {
-        Integer step = consumersPerArgument.keySet().stream().max(Comparator.naturalOrder()).map(s -> s + 1).orElse(0);
-        consumersPerArgument.computeIfAbsent(step, v -> new ArrayList<>()).add(consumer);
-        validate(step);
-    }
-
-    public void build(Integer argument, Consumer consumer) {
-        consumersPerArgument.computeIfAbsent(argument, v -> new ArrayList<>()).add(consumer);
-        validate(argument);
-    }
-
-    private void validate(int argument) {
-        if(consumersPerArgument.get(argument).size() > 2) {
-            throw new RuntimeException("Only 2 consumers per argument allowed.");
-        }
-
-        if(consumersPerArgument.get(argument).size() == 2) {
-            List<Consumer> consumers = consumersPerArgument.get(argument);
-            if((consumers.get(0) instanceof TokenConsumer && consumers.get(1) instanceof TokenConsumer) ||
-               (consumers.get(0) instanceof FunctionConsumer && consumers.get(1) instanceof FunctionConsumer)) {
-                throw new RuntimeException("Cannot program 2 consumers of same type for one argument.");
-            }
-        }
-    }
-
-    protected void setNextStepForConsumer(Consumer consumer, Integer nextStep) {
-        nextArgumentForConsumer.put(consumer, nextStep);
-    }
-
     private Consumer getConsumer(List<Consumer> consumers, Class<? extends Consumer> type) {
         return consumers.stream().filter(c -> type.isInstance(c)).findAny().orElse(null);
     }
@@ -114,6 +85,35 @@ public abstract class Function {
         }
 
         return false;
+    }
+
+    public void build(Consumer consumer) {
+        Integer argument = consumersPerArgument.keySet().stream().max(Comparator.naturalOrder()).map(s -> s + 1).orElse(0);
+        consumersPerArgument.computeIfAbsent(argument, v -> new ArrayList<>()).add(consumer);
+        validate(argument);
+    }
+
+    public void build(Integer argument, Consumer consumer) {
+        consumersPerArgument.computeIfAbsent(argument, v -> new ArrayList<>()).add(consumer);
+        validate(argument);
+    }
+
+    private void validate(int argument) {
+        if(consumersPerArgument.get(argument).size() > 2) {
+            throw new RuntimeException("Only 2 consumers per argument allowed.");
+        }
+
+        if(consumersPerArgument.get(argument).size() == 2) {
+            List<Consumer> consumers = consumersPerArgument.get(argument);
+            if((consumers.get(0) instanceof TokenConsumer && consumers.get(1) instanceof TokenConsumer) ||
+                    (consumers.get(0) instanceof FunctionConsumer && consumers.get(1) instanceof FunctionConsumer)) {
+                throw new RuntimeException("Cannot program 2 consumers of same type for one argument.");
+            }
+        }
+    }
+
+    protected void setNextStepForConsumer(Consumer consumer, Integer nextStep) {
+        nextArgumentForConsumer.put(consumer, nextStep);
     }
 
     public abstract void execute() throws Exception;
