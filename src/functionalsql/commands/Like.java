@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TableOrColumnConsumer;
 import functionalsql.consumer.TokenConsumer;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_VALUE_SHOULD_BE_QUOTED;
@@ -13,8 +14,7 @@ public class Like extends Function {
     private String column, value;
 
     public Like() {
-        argumentsTakesTableOrColumn(1);
-        build(1, new TokenConsumer(this, token -> column = token).singleValue().mandatory());
+        build(1, new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
         build(2, new TokenConsumer(this, token -> value = token).singleValue().mandatory());
     }
 

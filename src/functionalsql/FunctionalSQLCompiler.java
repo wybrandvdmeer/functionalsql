@@ -196,7 +196,7 @@ public class FunctionalSQLCompiler {
             Class<? extends Function> functionClass = getFunction(token);
 
             if(functionClass != null) {
-                if(functionClass == Ref.class && !function.isColumn(function.getStep())) {
+                if(functionClass == Ref.class && !function.expectTableOrColumn()) {
                     syntaxError(ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION, token, getFSNameForFunction(function));
                 }
 
@@ -210,7 +210,7 @@ public class FunctionalSQLCompiler {
                     function.process(exec(functionClass,null));
                 }
             } else {
-                if (function.isColumn(function.getStep())) {
+                if (function.expectTableOrColumn()) {
                     token = resolveColumn(token);
                 }
 

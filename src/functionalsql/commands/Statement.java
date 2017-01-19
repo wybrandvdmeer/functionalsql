@@ -1,8 +1,8 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TableOrColumnConsumer;
 import functionalsql.consumer.FunctionConsumer;
-import functionalsql.consumer.TokenConsumer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,9 +27,7 @@ public class Statement extends Function {
     private String sql, table;
 
     public Statement() {
-        argumentsTakesTableOrColumn(1);
-
-        build(1, new TokenConsumer(this, token -> {
+        build(1, new TableOrColumnConsumer(this, token -> {
             if(table != null) {
                 getCompiler().syntaxError(ERR_UNKNOWN_FUNCTION, token);
             }

@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TableOrColumnConsumer;
 import functionalsql.consumer.TokenConsumer;
 
 /**
@@ -18,8 +19,7 @@ public class FilterDate extends Function {
     private String secondValueOrOperator = "=", column, value;
 
     public FilterDate() {
-        argumentsTakesTableOrColumn(1);
-        build(1, new TokenConsumer(this, token -> column = token).singleValue());
+        build(1, new TableOrColumnConsumer(this, token -> column = token).singleValue());
         build(2, new TokenConsumer(this, token -> value = token).singleValue());
         build(3, new TokenConsumer(this, token -> secondValueOrOperator = token));
     }

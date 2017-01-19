@@ -1,6 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
+import functionalsql.consumer.TableOrColumnConsumer;
 import functionalsql.consumer.TokenConsumer;
 
 import java.util.ArrayList;
@@ -24,10 +25,8 @@ public class Filter extends Function {
     private String column;
     private List<String> values = new ArrayList<>();
 
-
     public Filter() {
-        argumentsTakesTableOrColumn(1);
-        build(1, new TokenConsumer(this, token -> column = token).singleValue().mandatory());
+        build(1, new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
         build(2, new TokenConsumer(this, token -> values.add(token)).mandatory());
     }
 

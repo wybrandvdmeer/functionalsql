@@ -1,7 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
-import functionalsql.consumer.TokenConsumer;
+import functionalsql.consumer.TableOrColumnConsumer;
 
 /**
  * Syntax: newtable( table )
@@ -12,8 +12,7 @@ public class NewTable extends Function {
     private String table, alias;
 
     public NewTable() {
-        argumentsTakesTableOrColumn(1);
-        build(1, new TokenConsumer(this, token -> table = token).singleValue().mandatory());
+        build(1, new TableOrColumnConsumer(this, token -> table = token).singleValue().mandatory());
     }
 
     public void execute() throws Exception {

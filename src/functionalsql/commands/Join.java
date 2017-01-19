@@ -2,9 +2,9 @@ package functionalsql.commands;
 
 import functionalsql.Function;
 import functionalsql.Relation;
+import functionalsql.consumer.TokenConsumer;
 import functionalsql.consumer.Consumer;
 import functionalsql.consumer.FunctionConsumer;
-import functionalsql.consumer.TokenConsumer;
 
 import static functionalsql.FunctionalSQLCompiler.ERR_JOIN_SHOULD_FOLLOW_JOIN;
 import static functionalsql.FunctionalSQLCompiler.ERR_NO_JOIN_COLUMNS_DEFINED_AND_NO_RELATION_FOUND;

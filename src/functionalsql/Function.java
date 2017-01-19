@@ -1,5 +1,6 @@
 package functionalsql;
 
+import functionalsql.consumer.TableOrColumnConsumer;
 import functionalsql.consumer.Consumer;
 import functionalsql.consumer.FunctionConsumer;
 import functionalsql.consumer.TokenConsumer;
@@ -11,13 +12,10 @@ import java.util.Map;
 
 public abstract class Function {
     private FunctionalSQLCompiler compiler;
-
     private Map<Integer, List<Consumer>> consumersPerStep = new HashMap<>();
     private Map<Consumer, Integer> nextStepForConsumer = new HashMap<>();
 
     private Integer step = 1;
-
-    private List<Integer> columnArguments = new ArrayList<>();
 
     public void setCompiler(FunctionalSQLCompiler compiler) {
         this.compiler = compiler;
@@ -27,8 +25,12 @@ public abstract class Function {
         return compiler;
     }
 
-    public boolean isColumn(int argument) {
-        return columnArguments.contains(argument);
+    public boolean expectTableOrColumn() {
+        List<Consumer> consumers = consumersPerStep.get(step);
+        if(consumers == null) {
+            return false;
+        }
+        return getConsumer(consumers, TableOrColumnConsumer.class) != null;
     }
 
     public void build(Integer step, Consumer consumer) {
@@ -72,14 +74,6 @@ public abstract class Function {
         if(nextStepForConsumer.containsKey(consumer)) {
             step = nextStepForConsumer.get(consumer);
         }
-    }
-
-    protected void argumentsTakesTableOrColumn(int argument) {
-        columnArguments.add(argument);
-    }
-
-    public int getStep() {
-        return step;
     }
 
     protected boolean isFinished() {

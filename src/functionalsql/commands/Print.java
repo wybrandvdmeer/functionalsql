@@ -1,7 +1,7 @@
 package functionalsql.commands;
 
 import functionalsql.Function;
-import functionalsql.consumer.TokenConsumer;
+import functionalsql.consumer.TableOrColumnConsumer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +15,7 @@ public class Print extends Function {
     private List<String> columns = new ArrayList<>();
 
     public Print() {
-        argumentsTakesTableOrColumn(1);
-        build(1, new TokenConsumer(this, token -> columns.add(token)).mandatory());
+        build(1, new TableOrColumnConsumer(this, token -> columns.add(token)).mandatory());
     }
 
     public void execute() throws Exception {

@@ -20,6 +20,10 @@ public abstract class Consumer<T> {
         return function;
     }
 
+    public FunctionalSQLCompiler getCompiler() {
+        return function.getCompiler();
+    }
+
     public Consumer<T> singleValue() {
         singleValue = true;
         return this;
@@ -35,10 +39,6 @@ public abstract class Consumer<T> {
     }
 
     public boolean isMandatory() { return mandatory; }
-
-    public FunctionalSQLCompiler getCompiler() {
-        return function.getCompiler();
-    }
 
     public boolean hasConsumed() {
         return consumed;
