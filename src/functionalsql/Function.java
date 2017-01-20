@@ -38,6 +38,7 @@ public abstract class Function {
         return consumers.stream().filter(c -> type.isInstance(c)).findAny().orElse(null);
     }
 
+    @SuppressWarnings("unchecked")
     public void process(Object token) throws Exception {
         List<Consumer> consumers = consumersPerArgument.get(argument);
         if(consumers == null) {
