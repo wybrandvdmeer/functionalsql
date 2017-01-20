@@ -13,7 +13,7 @@ import java.util.Comparator;
 
 public abstract class Function {
     private FunctionalSQLCompiler compiler;
-    private Map<Integer, List<Consumer>> consumersPerArgument = new HashMap<>();
+    private Map<Integer, Consumers> consumersPerArgument = new HashMap<>();
     private Map<Consumer, Integer> nextArgumentForConsumer = new HashMap<>();
 
     private int argument = 0;
@@ -27,20 +27,16 @@ public abstract class Function {
     }
 
     public boolean expectTableOrColumn() {
-        List<Consumer> consumers = consumersPerArgument.get(argument);
+        Consumers consumers = consumersPerArgument.get(argument);
         if(consumers == null) {
             return false;
         }
-        return getConsumer(consumers, TableOrColumnConsumer.class) != null;
-    }
-
-    private Consumer getConsumer(List<Consumer> consumers, Class<? extends Consumer> type) {
-        return consumers.stream().filter(c -> type.isInstance(c)).findAny().orElse(null);
+        return consumers.tokenConsumer instanceof TableOrColumnConsumer;
     }
 
     @SuppressWarnings("unchecked")
     public void process(Object token) throws Exception {
-        List<Consumer> consumers = consumersPerArgument.get(argument);
+        Consumers consumers = consumersPerArgument.get(argument);
         if(consumers == null) {
             getCompiler().syntaxError(FunctionalSQLCompiler.ERR_FUNCTION_HAS_TOO_MANY_ARGUMENTS);
         }
@@ -48,12 +44,12 @@ public abstract class Function {
         Consumer consumer;
 
         if(token instanceof Function) {
-            if((consumer = getConsumer(consumers, FunctionConsumer.class)) == null) {
+            if((consumer = consumers.functionConsumer) == null) {
                 getCompiler().syntaxError(FunctionalSQLCompiler.ERR_CANNOT_USE_FUNCTION_AS_ARGUMENT_OF_FUNCTION,
                         getCompiler().getFSNameForFunction((Function)token),
                         getCompiler().getFSNameForFunction(this));
             }
-        } else if((consumer = getConsumer(consumers, TokenConsumer.class)) == null) {
+        } else if((consumer = consumers.tokenConsumer) == null) {
             /* At this point there are consumers, so the remaining consumer has to be a FunctionConsumer.
             */
             getCompiler().syntaxError(FunctionalSQLCompiler.ERR_EXPECT_A_FUNCTION_CALL, token);
@@ -79,7 +75,7 @@ public abstract class Function {
             return false;
         }
 
-        for(Consumer consumer : consumersPerArgument.get(argument)) {
+        for(Consumer consumer : consumersPerArgument.get(argument).consumers) {
             if(consumer.isMandatory() && !consumer.hasConsumed()) {
                 return true;
             }
@@ -90,31 +86,37 @@ public abstract class Function {
 
     public void build(Consumer consumer) {
         Integer argument = consumersPerArgument.keySet().stream().max(Comparator.naturalOrder()).map(s -> s + 1).orElse(0);
-        consumersPerArgument.computeIfAbsent(argument, v -> new ArrayList<>()).add(consumer);
-        validate(argument);
+        consumersPerArgument.computeIfAbsent(argument, v -> new Consumers()).add(consumer);
     }
 
     public void build(Integer argument, Consumer consumer) {
-        consumersPerArgument.computeIfAbsent(argument, v -> new ArrayList<>()).add(consumer);
-        validate(argument);
-    }
-
-    private void validate(int argument) {
-        if(consumersPerArgument.get(argument).size() > 2) {
-            throw new RuntimeException("Only 2 consumers per argument allowed.");
-        }
-
-        if(consumersPerArgument.get(argument).size() == 2) {
-            List<Consumer> consumers = consumersPerArgument.get(argument);
-            if((consumers.get(0) instanceof TokenConsumer && consumers.get(1) instanceof TokenConsumer) ||
-                    (consumers.get(0) instanceof FunctionConsumer && consumers.get(1) instanceof FunctionConsumer)) {
-                throw new RuntimeException("Cannot program 2 consumers of same type for one argument.");
-            }
-        }
+        consumersPerArgument.computeIfAbsent(argument, v -> new Consumers()).add(consumer);
     }
 
     protected void setNextStepForConsumer(Consumer consumer, Integer nextStep) {
         nextArgumentForConsumer.put(consumer, nextStep);
+    }
+
+    private class Consumers {
+        FunctionConsumer functionConsumer;
+        TokenConsumer tokenConsumer;
+        List<Consumer> consumers = new ArrayList<>();
+
+        void add(Consumer consumer) {
+            if(consumer instanceof FunctionConsumer) {
+                if(functionConsumer != null) {
+                    throw new RuntimeException("Consumer already defined.");
+                }
+                functionConsumer = (FunctionConsumer)consumer;
+            } else {
+                if(tokenConsumer != null) {
+                    throw new RuntimeException("Consumer already defined.");
+                }
+                tokenConsumer = (TokenConsumer)consumer;
+            }
+
+            consumers.add(consumer);
+        }
     }
 
     public abstract void execute() throws Exception;
