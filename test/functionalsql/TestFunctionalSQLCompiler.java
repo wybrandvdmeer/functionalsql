@@ -89,7 +89,7 @@ public class TestFunctionalSQLCompiler {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        c.parse("a filter(1)");
+        c.parse("a filter()");
     }
 
     @Test
@@ -243,22 +243,7 @@ public class TestFunctionalSQLCompiler {
     }
 
     @Test
-    public void testSelect() throws Exception {
-        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-        assertEquals("SELECT * FROM a t0" , c.parse( "a" ) );
-        assertEquals("SELECT * FROM a t0" , c.parse( "(a)" ) );
-        assertEquals("SELECT * FROM a t0" , c.parse( "((a))" ) );
-        assertEquals("SELECT * FROM a t0" , c.parse( "(((a)))" ) );
-        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("a filter(field, 2)"));
-        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("(a) filter(field, 2)"));
-        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((a) filter(field, 2))"));
-        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((((a))) filter(field, 2))"));
-        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((a filter(field, 2)))"));
-        assertEquals(c.parse("(((((a) filter(field, 2)))))"), c.parse("((((a))) filter(field, 2))"));
-    }
-
-    @Test
-    public void testQuery() throws Exception {
+    public void testComplexQuery() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
 
         c.addRelation("a", "id", "b", "id");
@@ -274,9 +259,18 @@ public class TestFunctionalSQLCompiler {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
         c.addRelation("a", "id", "b", "id");
         c.addRelation("b", "id", "c", "id");
-
         assertEquals( "SELECT * FROM a t0, (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id) t1 WHERE t0.id = t1.id",
                 c.parse("a join((b join(c)), id, id )") );
+        assertEquals("SELECT * FROM a t0" , c.parse( "a" ) );
+        assertEquals("SELECT * FROM a t0" , c.parse( "(a)" ) );
+        assertEquals("SELECT * FROM a t0" , c.parse( "((a))" ) );
+        assertEquals("SELECT * FROM a t0" , c.parse( "(((a)))" ) );
+        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("a filter(field, 2)"));
+        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("(a) filter(field, 2)"));
+        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((a) filter(field, 2))"));
+        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((((a))) filter(field, 2))"));
+        assertEquals("SELECT * FROM a t0 WHERE field = 2", c.parse("((a filter(field, 2)))"));
+        assertEquals(c.parse("(((((a) filter(field, 2)))))"), c.parse("((((a))) filter(field, 2))"));
     }
 
     @Test
@@ -320,12 +314,8 @@ public class TestFunctionalSQLCompiler {
     @Test
     public void testPrint() throws Exception {
         FunctionalSQLCompiler c = new FunctionalSQLCompiler();
-
         assertEquals( "SELECT v FROM a t0", c.parse("a print(v)"));
-
-        c.addRelation("a", "v_a", "b", "v_b");
-
-        assertEquals( "SELECT t1.v FROM a t0, b t1 WHERE t0.v_a = t1.v_b", c.parse( "a join(b) print( b.v ) "));
+        assertEquals( "SELECT t0.* FROM a t0", c.parse("a print(a)"));
     }
 
     @Test
@@ -423,8 +413,8 @@ public class TestFunctionalSQLCompiler {
         assertEquals("SELECT * FROM a t0 WHERE field = 1", c.parse("a filter(field, 1)"));
         assertEquals("SELECT * FROM a t0 WHERE v = 'a b'", c.parse("a filter(v, 'a b')"));
         assertEquals("SELECT * FROM a t0 WHERE v IN ( 'a', 'b' )", c.parse("a filter(v, 'a', 'b')"));
-        assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND v IN ( 'a', 'b' )", c.parse("a join(b) filter(v, 'a', 'b')"));
-        assertEquals("SELECT * FROM a t0, b t1 WHERE t0.va = t1.vb AND t1.v IN ( 'a', 'b' )", c.parse("a join(b) filter(b.v, 'a', 'b')"));
+        assertEquals("SELECT * FROM a t0 WHERE v IS NULL", c.parse("a filter(v)"));
+
 
         try {
             c.parse("a filter(1, a)");

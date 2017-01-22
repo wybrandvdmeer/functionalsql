@@ -27,7 +27,7 @@ public class Filter extends Function {
 
     public Filter() {
         build(new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
-        build(new TokenConsumer(this, token -> values.add(token)).mandatory());
+        build(new TokenConsumer(this, token -> values.add(token)));
     }
 
     public Filter(boolean inclusive) {
@@ -71,7 +71,7 @@ public class Filter extends Function {
     private void filterOnValues(String column, List<String> values, boolean inclusive) throws Exception {
         /* If list is null or has no values, it is a program error.
         */
-        assert (values != null && values.size() > 0);
+        assert (values != null);
 
         for(String value : values) {
             if(!getCompiler().isNummeric(value) && !getCompiler().isQuoted(value)) {
