@@ -1,4 +1,4 @@
-package functionalsql.commands;
+package functionalsql.functions;
 
 /**
  * Syntax: notfilter( column , value1 , value2 , ... )

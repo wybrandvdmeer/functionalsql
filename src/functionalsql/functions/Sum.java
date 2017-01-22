@@ -1,4 +1,4 @@
-package functionalsql.commands;
+package functionalsql.functions;
 
 public class Sum extends Report {
     public Sum() {

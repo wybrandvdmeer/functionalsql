@@ -1,4 +1,4 @@
-package functionalsql.commands;
+package functionalsql.functions;
 
 import functionalsql.Function;
 import functionalsql.consumer.TokenConsumer;

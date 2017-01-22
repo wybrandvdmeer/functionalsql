@@ -1,4 +1,4 @@
-package functionalsql.commands;
+package functionalsql.functions;
 
 public class RightJoin extends Join {
     public RightJoin() {

@@ -1,4 +1,4 @@
-package functionalsql.commands;
+package functionalsql.functions;
 
 /**
  * Syntax: desc( fielda, table.fieldb , ... )

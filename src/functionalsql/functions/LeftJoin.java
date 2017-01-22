@@ -1,4 +1,4 @@
-package functionalsql.commands;
+package functionalsql.functions;
 
 public class LeftJoin extends Join {
     public LeftJoin() {

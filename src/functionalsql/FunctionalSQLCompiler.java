@@ -1,6 +1,6 @@
 package functionalsql;
 
-import functionalsql.commands.*;
+import functionalsql.functions.*;
 
 import java.lang.reflect.Constructor;
 import java.util.*;

@@ -1,12 +1,8 @@
 package customfunctionalsql;
 
 import functionalsql.Function;
-import functionalsql.commands.Filter;
 import functionalsql.consumer.TableOrColumnConsumer;
 import functionalsql.consumer.TokenConsumer;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static customfunctionalsql.CustomFunctionalSQLCompiler.ERR_ARGUMENT_SHOULD_BE_NUMMERICAL;
 import static functionalsql.FunctionalSQLCompiler.ERR_REFERING_TO_A_NON_EXISTING_TABLE;

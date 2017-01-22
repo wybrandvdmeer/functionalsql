@@ -1,4 +1,4 @@
-package functionalsql.commands;
+package functionalsql.functions;
 
 import functionalsql.Function;
 import functionalsql.consumer.TableOrColumnConsumer;
@@ -9,12 +9,13 @@ import java.util.List;
 import static functionalsql.FunctionalSQLCompiler.ERR_SELECT_ALREADY_DEFINED;
 
 /**
- * Syntax: print( column1 , column2 , ... )
+ * Syntax: group( fielda, table.fieldb , ... )
+ *
  */
-public class Print extends Function {
+public class Group extends Function {
     private List<String> columns = new ArrayList<>();
 
-    public Print() {
+    public Group() {
         build(new TableOrColumnConsumer(this, token -> columns.add(token)).mandatory());
     }
 
@@ -24,28 +25,21 @@ public class Print extends Function {
         }
 
         String selectClause = "SELECT";
+        String groupByClause = "GROUP BY";
 
-        /* Expand the select clause.
+        /* Expand the select and group clause.
         */
         for (int idx = 0; idx < columns.size(); idx++) {
-            String column = columns.get(idx);
-
-            /* Check if argument is a table. If so, all fields of table are selected.
-            Argument can also be a reference when the table was referred with the ref( table, occ ) function.
-            */
-            if (getCompiler().getStatement().isTable(column)) {
-                column = getCompiler().getStatement().getAlias(column) + ".*";
-            } else if (getCompiler().getStatement().isAlias(column)) {
-                column = column + ".*";
-            }
-
-            selectClause += " " + column;
+            selectClause += " " + columns.get(idx);
+            groupByClause += " " + columns.get(idx);
 
             if (idx < columns.size() - 1) {
                 selectClause += ",";
+                groupByClause += ",";
             }
         }
 
         getCompiler().getStatement().setSelectClause(selectClause);
+        getCompiler().getStatement().setGroupByClause(groupByClause);
     }
 }

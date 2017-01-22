@@ -1,4 +1,4 @@
-package functionalsql.commands;
+package functionalsql.functions;
 
 
 public class Min extends Report {
