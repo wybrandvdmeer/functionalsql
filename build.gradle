@@ -1,0 +1,27 @@
+apply plugin: 'java'
+
+sourceSets.main.java.srcDirs = ['src']
+sourceSets.test.java.srcDirs = ['test']
+
+jar {
+    baseName = 'functionalsql'
+    version =  '0.1'
+}
+
+dependencies {
+	testCompile "junit:junit:4.12"
+}
+
+
+repositories {
+	maven {
+		url "http://repo1.maven.org/maven"
+        }
+        maven {
+	    url "http://central.maven.org/maven2"
+        }
+}
+
+
+
+
