@@ -13,6 +13,14 @@ public class TestFunctionalSQLCompiler {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
+    public void testExtraClosingParenthesis() throws Exception {
+        expectedException.expect(Exception.class);
+        expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.parse("a asc(a))");
+    }
+
+    @Test
     public void testOrderByAlreadyDefined() throws Exception {
         expectedException.expect(Exception.class);
         expectedException.expectMessage(createError(FunctionalSQLCompiler.ERR_ORDER_BY_CLAUSE_ALREADY_DEFINED));
