@@ -95,6 +95,8 @@ public class FunctionalSQLCompiler {
         functions.put("notfilter", NotFilter.class);
         functions.put("newtable", NewTable.class);
         functions.put("ref", Ref.class);
+        functions.put("or", Or.class);
+        functions.put("and", And.class);
     }
 
     public String parse(String statement) throws Exception {
@@ -383,6 +385,8 @@ public class FunctionalSQLCompiler {
         if (instance instanceof Join) {
             ((Join) instance).setDriveTable(driveTable, getStatement().getAlias(driveTable));
         }
+
+        instance.preParse();
 
         parse(instance);
         instance.execute();

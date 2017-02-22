@@ -26,6 +26,8 @@ public class Statement extends Function {
 
     private String sql, table;
 
+    private FilterClauseCatcher filterClauseCatcher;
+
     public Statement() {
         build(0, new TableOrColumnConsumer(this, token -> {
             if(table != null) {
@@ -47,6 +49,14 @@ public class Statement extends Function {
                 }
             }
         }));
+    }
+
+    public FilterClauseCatcher getFilterClauseCatcher() {
+        return filterClauseCatcher;
+    }
+
+    public void setFilterClauseCatcher(FilterClauseCatcher filterClauseCatcher) {
+        this.filterClauseCatcher = filterClauseCatcher;
     }
 
     public void execute() throws Exception {
@@ -172,7 +182,9 @@ public class Statement extends Function {
     }
 
     public void addFilterClause(String clause) {
-        if(!filterClauses.contains(clause)) {
+        if(filterClauseCatcher != null) {
+            filterClauseCatcher.catchFilterClause(clause);
+        } else if(!filterClauses.contains(clause)) {
             filterClauses.add(clause);
         }
     }

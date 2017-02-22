@@ -34,6 +34,9 @@ public abstract class Function {
         return consumers.tokenConsumer instanceof TableOrColumnConsumer;
     }
 
+    public void preParse() {
+    }
+
     @SuppressWarnings("unchecked")
     public void process(Object token) throws Exception {
         Consumers consumers = consumersPerArgument.get(argument);
