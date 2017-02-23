@@ -13,7 +13,7 @@ public class Or extends Function {
     private FilterClauseCatcher filterClauseCatcher;
 
     public Or() {
-        build(new FunctionConsumer(this).expect(Filter.class).expect(FilterDate.class).expect(Or.class));
+        build(new FunctionConsumer(this).expect(Filter.class).expect(FilterDate.class).expect(Or.class).mandatory());
     }
 
     public Or(boolean orMode) {
