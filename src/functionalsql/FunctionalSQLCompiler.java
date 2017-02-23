@@ -97,6 +97,7 @@ public class FunctionalSQLCompiler {
         functions.put("ref", Ref.class);
         functions.put("or", Or.class);
         functions.put("and", And.class);
+        functions.put("in", In.class);
     }
 
     public String parse(String statement) throws Exception {
@@ -126,7 +127,7 @@ public class FunctionalSQLCompiler {
     function(a,b,c) e.g. usage of commas.
     */
     private void parse(Function function) throws Exception {
-        if(function instanceof Statement) {
+        if(function.getClass() == Statement.class) {
             statements.add((Statement)function);
         } else {
             /* All Functions, except the Statement should always begin with an opening bracket.
@@ -164,7 +165,7 @@ public class FunctionalSQLCompiler {
                     function.process(((Ref)exec(functionClass, null)).getReference());
                 } else if(Join.class.isAssignableFrom(function.getClass())) {
                     function.process(exec(functionClass,((Join)function).getJoinTable()));
-                } else if(function.getClass() == Statement.class){
+                } else if(function instanceof Statement){
                     function.process(exec(functionClass, ((Statement)function).getDriveTableOfQuery()));
                 } else {
                     function.process(exec(functionClass,null));
@@ -179,7 +180,7 @@ public class FunctionalSQLCompiler {
 
             /* Dont process comma when dealing with a statement.
             */
-            if(function instanceof Statement) {
+            if(function.getClass() == Statement.class || function.isProcessingStatementArgument()) {
                 continue;
             }
 
@@ -479,5 +480,9 @@ public class FunctionalSQLCompiler {
                 }
             };
         }
+    }
+
+    public List<Statement> getStatements() {
+        return statements;
     }
 }
