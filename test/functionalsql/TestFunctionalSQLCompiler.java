@@ -539,6 +539,15 @@ public class TestFunctionalSQLCompiler {
         assertEquals("SELECT * FROM a t0 WHERE ( v = 10 OR v = 11 )", c.parse("a or(filter(v, 10), filter(v,11))"));
         assertEquals("SELECT * FROM a t0 WHERE ( v = 10 AND v = 11 )", c.parse("a and(filter(v, 10), filter(v,11))"));
         assertEquals("SELECT * FROM a t0 WHERE ( ( v = 1 AND v = 2 ) OR v = 3 )", c.parse("a or(and(filter(v,1), filter(v,2)), filter(v,3))"));
+        assertEquals("SELECT * FROM a t0 WHERE ( ( v != 1 AND v = 2 ) OR v = 3 )", c.parse("a or(and(notfilter(v,1), filter(v,2)), filter(v,3))"));
+        assertEquals("SELECT * FROM a t0 WHERE ( ( v = '20020101' AND v = 2 ) OR v = 3 )", c.parse("a or(and(filterdate(v,20020101), filter(v,2)), filter(v,3))"));
+
+        try {
+            c.parse("a or()");
+            fail();
+        } catch(Exception e) {
+            checkException(e,createError(FunctionalSQLCompiler.ERR_UNEXPECTED_END_OF_FUNCTION));
+        }
     }
 
     @Test
