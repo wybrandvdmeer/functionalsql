@@ -1,6 +1,5 @@
 package functionalsql.functions;
 
-import functionalsql.Function;
 import functionalsql.consumer.TableOrColumnConsumer;
 
 public class In extends Statement {
@@ -8,7 +7,7 @@ public class In extends Statement {
 
     public In() {
         buildAndReplace(0, new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
-        addStatementArgument(1);
+        markArgumentAsStatement(1);
     }
 
     protected void preParse() {

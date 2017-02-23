@@ -133,7 +133,7 @@ public abstract class Function {
         }
     }
 
-    public void addStatementArgument(Integer argument) {
+    public void markArgumentAsStatement(Integer argument) {
         statementArguments.add(argument);
     }
 
