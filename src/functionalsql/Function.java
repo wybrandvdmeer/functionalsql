@@ -15,6 +15,7 @@ public abstract class Function {
     private FunctionalSQLCompiler compiler;
     private Map<Integer, Consumers> consumersPerArgument = new HashMap<>();
     private Map<Consumer, Integer> nextArgumentForConsumer = new HashMap<>();
+    private List<Integer> statementArguments = new ArrayList<>();
 
     private int argument = 0;
 
@@ -34,7 +35,7 @@ public abstract class Function {
         return consumers.tokenConsumer instanceof TableOrColumnConsumer;
     }
 
-    public void preParse() {
+    protected void preParse() {
     }
 
     @SuppressWarnings("unchecked")
@@ -78,8 +79,12 @@ public abstract class Function {
             return false;
         }
 
+        if(hasConsumed()) {
+            return false;
+        }
+
         for(Consumer consumer : consumersPerArgument.get(argument).consumers) {
-            if(consumer.isMandatory() && !consumer.hasConsumed()) {
+            if(consumer.isMandatory()) {
                 return true;
             }
         }
@@ -94,6 +99,12 @@ public abstract class Function {
 
     public void build(Integer argument, Consumer consumer) {
         consumersPerArgument.computeIfAbsent(argument, v -> new Consumers()).add(consumer);
+    }
+
+    public void buildAndReplace(Integer argument, Consumer consumer) {
+        consumersPerArgument.put(argument + 1, consumersPerArgument.get(argument));
+        consumersPerArgument.remove(argument);
+        build(argument, consumer);
     }
 
     protected void setNextStepForConsumer(Consumer consumer, Integer nextStep) {
@@ -121,6 +132,24 @@ public abstract class Function {
             consumers.add(consumer);
         }
     }
+
+    public void addStatementArgument(Integer argument) {
+        statementArguments.add(argument);
+    }
+
+    public boolean isProcessingStatementArgument() {
+        return statementArguments.contains(argument) && hasConsumed();
+    }
+
+    private boolean hasConsumed() {
+        for(Consumer consumer : consumersPerArgument.get(argument).consumers) {
+            if(consumer.hasConsumed()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     public abstract void execute() throws Exception;
 }

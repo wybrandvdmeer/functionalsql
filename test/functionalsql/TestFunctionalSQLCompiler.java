@@ -565,6 +565,15 @@ public class TestFunctionalSQLCompiler {
         }
     }
 
+    @Test
+    public void testInFunction() throws Exception {
+        FunctionalSQLCompiler c = new FunctionalSQLCompiler();
+        c.addRelation("b", "id", "c", "id");
+        assertEquals( "SELECT * FROM a t0 WHERE v IN (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id)", c.parse("a in(v, b join(c))"));
+        assertEquals( "SELECT * FROM a t0 WHERE v IN (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id)", c.parse("a in(v, (b join(c)))"));
+        assertEquals( "SELECT * FROM a t0 WHERE v IN (SELECT * FROM b t0, c t1 WHERE t0.id = t1.id)", c.parse("a in(v, ((b join(c))))"));
+    }
+
     private String createError(String format, Object... args) {
         return String.format(format, args);
     }

@@ -39,7 +39,7 @@ public class Statement extends Function {
         }));
 
         build(0, new FunctionConsumer(this,function -> {
-            if (function instanceof Statement) {
+            if (function.getClass() == Statement.class) {
                 String nestedQuery = ((Statement) function).getSql();
 
                 if(isFullSelect()) {

@@ -21,7 +21,7 @@ public class Or extends Function {
         this.orMode = orMode;
     }
 
-    public void preParse() {
+    protected void preParse() {
         filterClauseCatcher = getCompiler().getStatement().getFilterClauseCatcher();
         getCompiler().getStatement().setFilterClauseCatcher(filterClause -> {
             if(!filterClauses.contains(filterClause)) {
