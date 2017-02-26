@@ -207,7 +207,7 @@ public class FunctionalSQLCompiler {
             syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
         }
 
-        if(function instanceof Statement) {
+        if(function.getClass() == Statement.class) {
             statements.remove(function);
         }
     }
