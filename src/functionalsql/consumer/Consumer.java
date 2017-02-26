@@ -5,7 +5,7 @@ import functionalsql.FunctionalSQLCompiler;
 
 public abstract class Consumer<T> {
 
-    private boolean singleValue=false, mandatory=false, consumed=false;
+    private boolean singleValue=false, mandatory=false, consumed=false, consumesStatement=false;
 
     private final Function function;
 
@@ -34,6 +34,11 @@ public abstract class Consumer<T> {
         return this;
     }
 
+    public Consumer<T> consumesStatement() {
+        consumesStatement = true;
+        return this;
+    }
+
     public boolean isSingleValue() {
         return singleValue;
     }
@@ -42,6 +47,10 @@ public abstract class Consumer<T> {
 
     public boolean hasConsumed() {
         return consumed;
+    }
+
+    public boolean isConsumingAStatement() {
+        return consumesStatement;
     }
 
     public void consume(T token) throws Exception {

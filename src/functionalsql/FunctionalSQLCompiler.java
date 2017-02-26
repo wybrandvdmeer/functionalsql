@@ -154,6 +154,8 @@ public class FunctionalSQLCompiler {
                 }
             }
 
+            boolean argumentTakesAStatement = function.argumentTakesAnStatement();
+
             Class<? extends Function> functionClass = getFunction(token);
 
             if(functionClass != null) {
@@ -178,9 +180,10 @@ public class FunctionalSQLCompiler {
                 function.process(token);
             }
 
-            /* Dont process comma when dealing with a statement.
+            /* Process the comma following the argument. Unless the argument takes a statement, because statements
+            are consisting of functions which are not seperated by a commma.
             */
-            if(function.getClass() == Statement.class || function.isProcessingStatementArgument()) {
+            if(argumentTakesAStatement) {
                 continue;
             }
 

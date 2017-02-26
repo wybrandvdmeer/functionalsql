@@ -7,7 +7,6 @@ public class In extends Statement {
 
     public In() {
         buildAndReplace(0, new TableOrColumnConsumer(this, token -> column = token).singleValue().mandatory());
-        markArgumentAsStatement(1);
     }
 
     protected void preParse() {

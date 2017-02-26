@@ -36,7 +36,7 @@ public class Statement extends Function {
 
             table = token;
             fromClauses.add(String.format("%s %s", table, getAlias(table)));
-        }));
+        }).consumesStatement());
 
         build(0, new FunctionConsumer(this,function -> {
             if (function.getClass() == Statement.class) {
@@ -48,7 +48,7 @@ public class Statement extends Function {
                     fromClauses.add(String.format("(%s) %s", nestedQuery, getAlias(nestedQuery)));
                 }
             }
-        }));
+        }).consumesStatement());
     }
 
     public FilterClauseCatcher getFilterClauseCatcher() {

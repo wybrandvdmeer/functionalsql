@@ -35,6 +35,15 @@ public abstract class Function {
         return consumers.tokenConsumer instanceof TableOrColumnConsumer;
     }
 
+    public boolean argumentTakesAnStatement() {
+        Consumers consumers = consumersPerArgument.get(argument);
+        if(consumers == null) {
+            return false;
+        }
+        return consumers.consumers.stream().filter(consumer -> consumer.isConsumingAStatement()).
+                map(c -> c.isConsumingAStatement()).findAny().orElse(false);
+    }
+
     protected void preParse() {
     }
 
@@ -131,14 +140,6 @@ public abstract class Function {
 
             consumers.add(consumer);
         }
-    }
-
-    public void markArgumentAsStatement(Integer argument) {
-        statementArguments.add(argument);
-    }
-
-    public boolean isProcessingStatementArgument() {
-        return statementArguments.contains(argument) && hasConsumed();
     }
 
     private boolean hasConsumed() {
