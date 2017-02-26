@@ -418,11 +418,7 @@ public class FunctionalSQLCompiler {
                     for (; !quotedArea && pointer < chars.length && isWhiteSpace(chars[pointer]); pointer++) {
                     }
 
-                    if (pointer < chars.length) {
-                        return true;
-                    }
-
-                    return false;
+                    return pointer < chars.length;
                 }
 
                 public String next() {
