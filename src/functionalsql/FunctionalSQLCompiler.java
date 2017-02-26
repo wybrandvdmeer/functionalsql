@@ -202,8 +202,8 @@ public class FunctionalSQLCompiler {
         } while(!")".equals(token));
 
         if(function.expectArgument() ||
-                (token == null && !(function instanceof Statement)) ||
-                (")".equals(token) && (function instanceof Statement) && statements.size() == 1)) { // root statement should not close with ')'.
+                (token == null && function.getClass() != Statement.class) ||
+                (")".equals(token) && function.getClass() == Statement.class && statements.size() == 1)) { // root statement should not close with ')'.
             syntaxError(ERR_UNEXPECTED_END_OF_FUNCTION);
         }
 
