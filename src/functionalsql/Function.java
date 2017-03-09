@@ -15,7 +15,6 @@ public abstract class Function {
     private FunctionalSQLCompiler compiler;
     private Map<Integer, Consumers> consumersPerArgument = new HashMap<>();
     private Map<Consumer, Integer> nextArgumentForConsumer = new HashMap<>();
-    private List<Integer> statementArguments = new ArrayList<>();
 
     private int argument = 0;
 
