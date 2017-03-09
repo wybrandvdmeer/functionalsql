@@ -39,8 +39,8 @@ public abstract class Function {
         if(consumers == null) {
             return false;
         }
-        return consumers.consumers.stream().filter(consumer -> consumer.isConsumingAStatement()).
-                map(c -> c.isConsumingAStatement()).findAny().orElse(false);
+
+        return consumers.consumers.stream().filter(c -> c.isConsumingAStatement()).count() > 0;
     }
 
     protected void preParse() {
@@ -91,13 +91,7 @@ public abstract class Function {
             return false;
         }
 
-        for(Consumer consumer : consumersPerArgument.get(argument).consumers) {
-            if(consumer.isMandatory()) {
-                return true;
-            }
-        }
-
-        return false;
+        return consumersPerArgument.get(argument).consumers.stream().filter(c -> c.isMandatory()).count() > 0;
     }
 
     public void build(Consumer consumer) {
