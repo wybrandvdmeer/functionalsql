@@ -136,14 +136,8 @@ public abstract class Function {
     }
 
     private boolean hasConsumed() {
-        for(Consumer consumer : consumersPerArgument.get(argument).consumers) {
-            if(consumer.hasConsumed()) {
-                return true;
-            }
-        }
-        return false;
+        return consumersPerArgument.get(argument).consumers.stream().filter(c -> c.hasConsumed()).count() > 0;
     }
-
 
     public abstract void execute() throws Exception;
 }
