@@ -154,7 +154,7 @@ public class FunctionalSQLCompiler {
                 }
             }
 
-            boolean argumentTakesAStatement = function.argumentTakesAnStatement();
+            boolean argumentTakesAStatement = function.argumentTakesAStatement();
 
             Class<? extends Function> functionClass = getFunction(token);
 

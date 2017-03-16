@@ -34,7 +34,7 @@ public abstract class Function {
         return consumers.tokenConsumer instanceof TableOrColumnConsumer;
     }
 
-    public boolean argumentTakesAnStatement() {
+    public boolean argumentTakesAStatement() {
         Consumers consumers = consumersPerArgument.get(argument);
         if(consumers == null) {
             return false;
