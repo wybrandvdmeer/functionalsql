@@ -14,12 +14,7 @@ dependencies {
 
 
 repositories {
-	maven {
-		url "http://repo1.maven.org/maven"
-        }
-        maven {
-	    url "http://central.maven.org/maven2"
-        }
+    mavenCentral()
 }
 
 
